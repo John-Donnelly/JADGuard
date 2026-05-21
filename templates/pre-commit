@@ -1,0 +1,13 @@
+#!/bin/sh
+# JAD Apps Guard — git pre-commit hook.
+#
+# Install it with:
+#   cp node_modules/@jadapps/guard/templates/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# It gates dependencies that changed relative to the last commit, so it stays
+# fast on day-to-day commits. A failing verdict aborts the commit.
+
+set -e
+
+npx --yes @jadapps/guard@latest scan --offline

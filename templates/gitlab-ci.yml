@@ -1,0 +1,17 @@
+# JAD Apps Guard — GitLab CI job.
+#
+# Merge this into your project's `.gitlab-ci.yml`. The job exits non-zero on a
+# failing verdict, which fails the pipeline.
+
+jadguard:
+  stage: test
+  image: node:22-alpine
+  script:
+    - npm ci
+    # `audit` gates the whole resolved tree. To gate only newly added or
+    # version-bumped dependencies, use `scan` instead:
+    #   npx --yes @jadapps/guard@latest scan
+    - npx --yes @jadapps/guard@latest audit
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
