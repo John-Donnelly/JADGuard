@@ -1,0 +1,77 @@
+{
+  "name": "@jadapps/guard",
+  "version": "0.1.0",
+  "description": "A supply-chain deployment gate for JavaScript/TypeScript projects — blocks installs and releases on malicious dependency indicators.",
+  "keywords": [
+    "security",
+    "supply-chain",
+    "npm",
+    "pnpm",
+    "yarn",
+    "audit",
+    "lockfile",
+    "malware",
+    "shai-hulud",
+    "ignore-scripts",
+    "cli"
+  ],
+  "license": "MIT",
+  "author": "John Donnelly",
+  "homepage": "https://github.com/John-Donnelly/jadapps-guard#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/John-Donnelly/jadapps-guard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/John-Donnelly/jadapps-guard/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "jadguard": "./dist/cli.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run test"
+  },
+  "dependencies": {
+    "@yarnpkg/parsers": "3.0.3",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "25.9.1",
+    "@vitest/coverage-v8": "4.1.7",
+    "eslint": "10.4.0",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.59.4",
+    "vitest": "4.1.7"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
