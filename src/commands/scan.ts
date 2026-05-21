@@ -1,6 +1,9 @@
-import { basename, relative } from 'node:path';
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { basename, join, relative } from 'node:path';
 import { loadConfig } from '../config/load.js';
 import type { GuardConfig } from '../config/schema.js';
+import type { Finding } from '../engine/finding.js';
 import type { Severity } from '../engine/severity.js';
 import { applyIgnores } from '../engine/suppression.js';
 import { computeVerdict, type GuardMode, type Verdict } from '../engine/verdict.js';
@@ -10,7 +13,11 @@ import type {
   ResolvedDependency,
   ScanType,
 } from '../gates/dependency/types.js';
-import { loadLockfile, parseLockfile } from '../gates/dependency/lockfile/detect.js';
+import {
+  detectLockfiles,
+  loadLockfile,
+  parseLockfile,
+} from '../gates/dependency/lockfile/detect.js';
 import type {
   PackageManager,
   ParsedLockfile,
@@ -18,9 +25,12 @@ import type {
 import { FileCache, MemoryCache } from '../integrations/cache.js';
 import { ExecGitClient } from '../integrations/git.js';
 import { HttpOsvClient } from '../integrations/osv.js';
-import { readProjectInfo } from '../integrations/package-manager.js';
+import { readProjectInfo, type ProjectInfo } from '../integrations/package-manager.js';
 import { HttpRegistryClient } from '../integrations/registry.js';
+import { NO_LOCKFILE_RULE, noLockfileFinding } from '../preconditions.js';
 import type { Report } from '../reporters/types.js';
+import { LockfileError } from '../util/errors.js';
+import { stripBom } from '../util/text.js';
 import { guardVersion } from '../util/version.js';
 
 export interface ScanOptions {
@@ -94,6 +104,70 @@ function applyOverrides(config: GuardConfig, options: ScanOptions): GuardConfig 
   return merged;
 }
 
+/** True when package.json declares at least one dependency of any kind. */
+async function hasDeclaredDependencies(dir: string): Promise<boolean> {
+  let pkg: Record<string, unknown>;
+  try {
+    const raw = await readFile(join(dir, 'package.json'), 'utf8');
+    pkg = JSON.parse(stripBom(raw)) as Record<string, unknown>;
+  } catch {
+    return false;
+  }
+  for (const field of ['dependencies', 'devDependencies', 'optionalDependencies'] as const) {
+    const deps = pkg[field];
+    if (deps && typeof deps === 'object' && Object.keys(deps).length > 0) return true;
+  }
+  return false;
+}
+
+/**
+ * Builds the result for a project with no lockfile. A project that declares
+ * dependencies but commits no lockfile fails the verdict via a `no-lockfile`
+ * finding; one with no dependencies has nothing to gate and passes.
+ */
+function buildNoLockfileResult(params: {
+  project: ProjectInfo;
+  config: GuardConfig;
+  scanType: ScanType;
+  startedAt: Date;
+  declaresDependencies: boolean;
+}): ScanResult {
+  const { project, config, scanType, startedAt, declaresDependencies } = params;
+  const ruleConfig = config.rules[NO_LOCKFILE_RULE.id];
+
+  const raw: Finding[] = [];
+  if (declaresDependencies && ruleConfig?.enabled !== false) {
+    const finding = noLockfileFinding();
+    if (ruleConfig?.severity) finding.severity = ruleConfig.severity;
+    raw.push(finding);
+  }
+
+  const suppression = applyIgnores(raw, config.ignores, startedAt);
+  const verdict = computeVerdict({
+    findings: suppression.kept,
+    degraded: [],
+    mode: config.mode,
+    failOn: config.failOn,
+    onDegraded: config.onDegraded,
+  });
+
+  return {
+    verdict,
+    report: {
+      verdict,
+      scanType,
+      project,
+      guardVersion: guardVersion(),
+      dependenciesScanned: 0,
+      dependenciesInScope: 0,
+      suppressedCount: suppression.suppressed.length,
+      staleIgnores: suppression.staleIgnores,
+      startedAt: startedAt.toISOString(),
+      finishedAt: new Date().toISOString(),
+    },
+  };
+}
+
 /**
  * Runs a full dependency-gate scan or audit and produces a `Report`. This is
  * the programmatic entry point; the CLI wraps it with argument parsing and
@@ -110,6 +184,26 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
   const config = applyOverrides(loaded.config, options);
 
   const project = await readProjectInfo(dir);
+
+  // Precondition: a project with no lockfile cannot be gated. If it is a real
+  // Node.js project (has a package.json) the missing lockfile is itself the
+  // verdict; otherwise Guard was pointed at the wrong directory.
+  if (detectLockfiles(dir).length === 0) {
+    if (!existsSync(join(dir, 'package.json'))) {
+      throw new LockfileError(
+        `no lockfile and no package.json in ${dir} — ` +
+          'run Guard from a Node.js project directory',
+      );
+    }
+    return buildNoLockfileResult({
+      project,
+      config,
+      scanType,
+      startedAt,
+      declaresDependencies: await hasDeclaredDependencies(dir),
+    });
+  }
+
   const { lockfile } = await loadLockfile(dir, {
     ...(project.packageManager ? { preferred: project.packageManager } : {}),
   });

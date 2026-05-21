@@ -40,6 +40,10 @@ The v0.1 dependency gate addresses that adversary with five rules:
 | `advisories`      | Versions with a known security advisory (via OSV).                         |
 | `self-integrity`  | Configuration that tries to weaken Guard's own protections.                |
 
+Ahead of the gate, a `no-lockfile` precondition fails any project that declares
+dependencies but commits no lockfile: without a lockfile, installs are not
+reproducible and there is no pinned dependency set to inspect.
+
 ## Trust boundaries and data flow
 
 Guard is **local-first**. Dependency code, lockfiles, and package metadata are

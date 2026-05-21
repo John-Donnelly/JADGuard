@@ -1,6 +1,7 @@
 import { fingerprintFinding } from '../engine/finding.js';
 import type { Severity } from '../engine/severity.js';
 import { dependencyRuleCatalog } from '../gates/dependency/index.js';
+import { PRECONDITION_RULES } from '../preconditions.js';
 import type { Report, Reporter } from './types.js';
 
 type SarifLevel = 'error' | 'warning' | 'note';
@@ -25,7 +26,7 @@ function sarifLevel(severity: Severity): SarifLevel {
  */
 export class SarifReporter implements Reporter {
   format(report: Report): string {
-    const rules = dependencyRuleCatalog().map((rule) => ({
+    const rules = [...dependencyRuleCatalog(), ...PRECONDITION_RULES].map((rule) => ({
       id: rule.id,
       name: rule.id,
       shortDescription: { text: rule.description },
@@ -43,7 +44,9 @@ export class SarifReporter implements Reporter {
       locations: [
         {
           physicalLocation: {
-            artifactLocation: { uri: finding.location.file ?? report.lockfilePath },
+            artifactLocation: {
+              uri: finding.location.file ?? report.lockfilePath ?? 'package.json',
+            },
             region: { startLine: 1 },
           },
         },

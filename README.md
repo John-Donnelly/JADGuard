@@ -73,6 +73,16 @@ everything.
 ignored, and its findings fail the verdict even in `warn` mode. See the
 [anti-bypass design](docs/THREAT-MODEL.md#anti-bypass-design).
 
+### Preconditions
+
+Before the gate runs, Guard checks the project can be scanned at all. A project
+that declares dependencies in `package.json` but commits **no lockfile** fails
+with a `no-lockfile` finding — installs without a lockfile are not reproducible,
+and there is no pinned dependency set to inspect. This is a normal failing
+verdict: it appears in `json` and `sarif` output like any other finding. Guard
+exits with a plain usage error only when pointed at a directory that is not a
+Node.js project at all.
+
 ## Configuration
 
 `jadguard init` writes a `jadguard.config.json`:
