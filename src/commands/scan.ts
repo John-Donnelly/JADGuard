@@ -1,0 +1,191 @@
+import { basename, relative } from 'node:path';
+import { loadConfig } from '../config/load.js';
+import type { GuardConfig } from '../config/schema.js';
+import type { Severity } from '../engine/severity.js';
+import { applyIgnores } from '../engine/suppression.js';
+import { computeVerdict, type GuardMode, type Verdict } from '../engine/verdict.js';
+import { runDependencyGate } from '../gates/dependency/index.js';
+import type {
+  DependencyGateContext,
+  ResolvedDependency,
+  ScanType,
+} from '../gates/dependency/types.js';
+import { loadLockfile, parseLockfile } from '../gates/dependency/lockfile/detect.js';
+import type {
+  PackageManager,
+  ParsedLockfile,
+} from '../gates/dependency/lockfile/types.js';
+import { FileCache, MemoryCache } from '../integrations/cache.js';
+import { ExecGitClient } from '../integrations/git.js';
+import { HttpOsvClient } from '../integrations/osv.js';
+import { readProjectInfo } from '../integrations/package-manager.js';
+import { HttpRegistryClient } from '../integrations/registry.js';
+import type { Report } from '../reporters/types.js';
+import { guardVersion } from '../util/version.js';
+
+export interface ScanOptions {
+  /** Project directory to scan. */
+  dir: string;
+  /** `scan` diffs against the git baseline; `audit` evaluates everything. */
+  scanType: ScanType;
+  /** Explicit config file path. */
+  configPath?: string;
+  /** Skip network-dependent rules. */
+  offline?: boolean;
+  /** Override `config.mode`. */
+  mode?: GuardMode;
+  /** Override `config.failOn`. */
+  failOn?: Severity;
+  /** Override `config.cooldownDays`. */
+  cooldownDays?: number;
+  /** Git ref to diff against for `scan` (default `HEAD`). */
+  baseRef?: string;
+}
+
+export interface ScanResult {
+  report: Report;
+  verdict: Verdict;
+}
+
+/** Maps a parsed lockfile kind back to its package manager. */
+function managerOfKind(kind: ParsedLockfile['kind']): PackageManager {
+  if (kind === 'npm') return 'npm';
+  if (kind === 'pnpm') return 'pnpm';
+  return 'yarn';
+}
+
+/**
+ * Determines which `name@version` pairs are new relative to the git baseline.
+ * Returns `null` when there is no usable baseline (not a repo, lockfile absent
+ * at the ref, unparseable) — the caller then treats everything as in scope.
+ */
+async function computeChangedSet(
+  dir: string,
+  lockfile: ParsedLockfile,
+  baseRef: string,
+): Promise<Set<string> | null> {
+  const git = new ExecGitClient(dir);
+  if (!(await git.isRepo())) return null;
+
+  const baseContent = await git.fileAtRef(basename(lockfile.path), baseRef);
+  if (baseContent === undefined) return null;
+
+  let baseline: ParsedLockfile;
+  try {
+    baseline = parseLockfile(baseContent, managerOfKind(lockfile.kind), lockfile.path);
+  } catch {
+    return null;
+  }
+
+  const baselineKeys = new Set(baseline.packages.map((p) => `${p.name}@${p.version}`));
+  const changed = new Set<string>();
+  for (const pkg of lockfile.packages) {
+    const key = `${pkg.name}@${pkg.version}`;
+    if (!baselineKeys.has(key)) changed.add(key);
+  }
+  return changed;
+}
+
+function applyOverrides(config: GuardConfig, options: ScanOptions): GuardConfig {
+  const merged: GuardConfig = { ...config };
+  if (options.mode) merged.mode = options.mode;
+  if (options.failOn) merged.failOn = options.failOn;
+  if (options.cooldownDays !== undefined) merged.cooldownDays = options.cooldownDays;
+  return merged;
+}
+
+/**
+ * Runs a full dependency-gate scan or audit and produces a `Report`. This is
+ * the programmatic entry point; the CLI wraps it with argument parsing and
+ * output handling, and it never exits the process itself.
+ */
+export async function runScan(options: ScanOptions): Promise<ScanResult> {
+  const startedAt = new Date();
+  const { dir, scanType } = options;
+
+  const loaded = await loadConfig({
+    dir,
+    ...(options.configPath ? { explicitPath: options.configPath } : {}),
+  });
+  const config = applyOverrides(loaded.config, options);
+
+  const project = await readProjectInfo(dir);
+  const { lockfile } = await loadLockfile(dir, {
+    ...(project.packageManager ? { preferred: project.packageManager } : {}),
+  });
+
+  const changedSet =
+    scanType === 'scan'
+      ? await computeChangedSet(dir, lockfile, options.baseRef ?? 'HEAD')
+      : null;
+
+  const dependencies: ResolvedDependency[] = lockfile.packages.map((pkg) => ({
+    name: pkg.name,
+    version: pkg.version,
+    integrity: pkg.integrity,
+    resolved: pkg.resolved,
+    hasInstallScript: pkg.hasInstallScript,
+    dev: pkg.dev,
+    external: pkg.external,
+    changed: changedSet === null ? true : changedSet.has(`${pkg.name}@${pkg.version}`),
+  }));
+  const inScope =
+    scanType === 'audit' ? dependencies : dependencies.filter((dep) => dep.changed);
+
+  const cache = options.offline
+    ? new MemoryCache()
+    : new FileCache(`${dir}/.jadguard-cache`, 'registry');
+  const context: DependencyGateContext = {
+    scanType,
+    project,
+    lockfile,
+    config,
+    dependencies,
+    inScope,
+    now: startedAt,
+    services: {
+      cache,
+      registry: new HttpRegistryClient({ registry: config.registry, cache }),
+      osv: new HttpOsvClient(),
+    },
+  };
+
+  const disabledRuleIds = new Set<string>();
+  const severityOverrides: Record<string, Severity> = {};
+  for (const [id, ruleConfig] of Object.entries(config.rules)) {
+    if (ruleConfig.enabled === false) disabledRuleIds.add(id);
+    if (ruleConfig.severity) severityOverrides[id] = ruleConfig.severity;
+  }
+
+  const { findings, degraded } = await runDependencyGate(context, {
+    offline: options.offline ?? false,
+    disabledRuleIds,
+    severityOverrides,
+  });
+
+  const suppression = applyIgnores(findings, config.ignores, startedAt);
+  const verdict = computeVerdict({
+    findings: suppression.kept,
+    degraded,
+    mode: config.mode,
+    failOn: config.failOn,
+    onDegraded: config.onDegraded,
+  });
+
+  const report: Report = {
+    verdict,
+    scanType,
+    project,
+    lockfileKind: lockfile.kind,
+    lockfilePath: relative(dir, lockfile.path).replace(/\\/g, '/') || basename(lockfile.path),
+    guardVersion: guardVersion(),
+    dependenciesScanned: dependencies.length,
+    dependenciesInScope: inScope.length,
+    suppressedCount: suppression.suppressed.length,
+    staleIgnores: suppression.staleIgnores,
+    startedAt: startedAt.toISOString(),
+    finishedAt: new Date().toISOString(),
+  };
+
+  return { report, verdict };
+}
