@@ -5,8 +5,8 @@ inspects the resolved dependency set in your lockfile and exits non-zero when it
 finds a malicious or risky indicator — so a poisoned dependency is blocked
 before it reaches a build or release.
 
-It runs as a portable CLI (`jadguard`) across **npm, pnpm and yarn** lockfiles,
-with output for humans, JSON, and SARIF (GitHub code scanning).
+It runs as a portable CLI (`jadguard`) across **npm, pnpm, yarn and Bun**
+lockfiles, with output for humans, JSON, and SARIF (GitHub code scanning).
 
 > Guard is one layer of defence in depth. Pair it with committed lockfiles,
 > `npm ci`, pinned versions, and `ignore-scripts` with a small reviewed
@@ -122,8 +122,8 @@ Guard is a small rule engine driving a single gate:
 - `src/engine/` — rule, finding and verdict types; the rule-agnostic runner,
   severity model, and config-driven suppression.
 - `src/config/` — config schema, validation, and file loading.
-- `src/gates/dependency/` — lockfile parsers (npm, pnpm, yarn classic & berry)
-  and the dependency rule catalog.
+- `src/gates/dependency/` — lockfile parsers (npm, pnpm, yarn classic & berry,
+  and Bun's text `bun.lock`) and the dependency rule catalog.
 - `src/integrations/` — registry, OSV, cache, git, and package-manager clients.
 - `src/reporters/` — `pretty`, `json`, and `sarif` output.
 - `src/commands/` + `src/cli.ts` — the `scan` / `audit` / `init` commands.
