@@ -59,9 +59,17 @@ export interface ScanResult {
 
 /** Maps a parsed lockfile kind back to its package manager. */
 function managerOfKind(kind: ParsedLockfile['kind']): PackageManager {
-  if (kind === 'npm') return 'npm';
-  if (kind === 'pnpm') return 'pnpm';
-  return 'yarn';
+  switch (kind) {
+    case 'npm':
+      return 'npm';
+    case 'pnpm':
+      return 'pnpm';
+    case 'bun':
+      return 'bun';
+    case 'yarn-classic':
+    case 'yarn-berry':
+      return 'yarn';
+  }
 }
 
 /**

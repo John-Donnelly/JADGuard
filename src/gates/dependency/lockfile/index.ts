@@ -8,6 +8,7 @@ export type {
 export { parseNpmLockfile } from './npm.js';
 export { parsePnpmLockfile } from './pnpm.js';
 export { parseYarnLockfile } from './yarn.js';
+export { parseBunLockfile } from './bun.js';
 export {
   detectLockfiles,
   parseLockfile,
