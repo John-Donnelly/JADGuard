@@ -1,0 +1,50 @@
+# JAD Apps Guard — GitHub Actions workflow.
+#
+# Copy this file to `.github/workflows/jadguard.yml` in your project. It runs
+# the dependency gate on every pull request and push to the default branch,
+# and uploads findings to GitHub code scanning.
+
+name: Supply-chain gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: read the repo, and write code-scanning results.
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  guard:
+    name: jadguard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # `jadguard scan` diffs the lockfile against git history; fetch it all.
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `audit` gates the whole resolved tree. For a faster pull-request check
+      # that only inspects newly added/bumped dependencies, use instead:
+      #   npx --yes @jadapps/guard@latest scan --base origin/${{ github.base_ref }}
+      - name: Run the supply-chain gate
+        run: npx --yes @jadapps/guard@latest audit --format sarif --output jadguard.sarif
+
+      - name: Upload findings to code scanning
+        # Pin this to a commit SHA before adopting it in a hardened pipeline.
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: jadguard.sarif
