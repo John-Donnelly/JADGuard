@@ -48,6 +48,7 @@ export {
   parseNpmLockfile,
   parsePnpmLockfile,
   parseYarnLockfile,
+  parseBunLockfile,
   detectLockfiles,
   parseLockfile,
   loadLockfile,

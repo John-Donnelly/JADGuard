@@ -30,7 +30,7 @@ async function readTextIfExists(path: string): Promise<string | undefined> {
 function parsePackageManagerField(value: unknown): PackageManager | undefined {
   if (typeof value !== 'string') return undefined;
   const name = value.split('@', 1)[0];
-  if (name === 'npm' || name === 'pnpm' || name === 'yarn') return name;
+  if (name === 'npm' || name === 'pnpm' || name === 'yarn' || name === 'bun') return name;
   return undefined;
 }
 

@@ -1,8 +1,8 @@
 /** The lockfile formats Guard understands. */
-export type LockfileKind = 'npm' | 'pnpm' | 'yarn-classic' | 'yarn-berry';
+export type LockfileKind = 'npm' | 'pnpm' | 'yarn-classic' | 'yarn-berry' | 'bun';
 
 /** The package managers Guard recognises a project as using. */
-export type PackageManager = 'npm' | 'pnpm' | 'yarn';
+export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
 /** One resolved package as recorded in a lockfile. */
 export interface LockfilePackage {

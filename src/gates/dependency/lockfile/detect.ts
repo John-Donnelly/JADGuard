@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LockfileError } from '../../../util/errors.js';
+import { parseBunLockfile } from './bun.js';
 import { parseNpmLockfile } from './npm.js';
 import { parsePnpmLockfile } from './pnpm.js';
 import { parseYarnLockfile } from './yarn.js';
@@ -19,6 +20,10 @@ const KNOWN_LOCKFILES: ReadonlyArray<{ file: string; manager: PackageManager }> 
   { file: 'npm-shrinkwrap.json', manager: 'npm' },
   { file: 'pnpm-lock.yaml', manager: 'pnpm' },
   { file: 'yarn.lock', manager: 'yarn' },
+  // Prefer Bun's text lockfile; the legacy binary format is detected too so it
+  // can be rejected with a helpful message rather than ignored.
+  { file: 'bun.lock', manager: 'bun' },
+  { file: 'bun.lockb', manager: 'bun' },
 ];
 
 /** Returns every recognised lockfile present in `dir`, in priority order. */
@@ -44,6 +49,8 @@ export function parseLockfile(
       return parsePnpmLockfile(content, path);
     case 'yarn':
       return parseYarnLockfile(content, path);
+    case 'bun':
+      return parseBunLockfile(content, path);
   }
 }
 
@@ -65,7 +72,8 @@ export async function loadLockfile(
   const found = detectLockfiles(dir);
   if (found.length === 0) {
     throw new LockfileError(
-      `no lockfile found in ${dir} — expected one of package-lock.json, pnpm-lock.yaml or yarn.lock`,
+      `no lockfile found in ${dir} — expected one of package-lock.json, ` +
+        'pnpm-lock.yaml, yarn.lock or bun.lock',
     );
   }
 
