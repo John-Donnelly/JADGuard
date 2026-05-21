@@ -93,6 +93,14 @@ export { getReporter, isReporterFormat, REPORTER_FORMATS } from './reporters/ind
 export { runScan, runInit } from './commands/index.js';
 export type { ScanOptions, ScanResult, InitOptions, InitResult } from './commands/index.js';
 
+// Preconditions --------------------------------------------------------------
+export {
+  NO_LOCKFILE_RULE,
+  PRECONDITION_RULES,
+  noLockfileFinding,
+} from './preconditions.js';
+export type { PreconditionRuleInfo } from './preconditions.js';
+
 // Meta -----------------------------------------------------------------------
 export { guardVersion } from './util/version.js';
 export { GuardError, UsageError, ConfigError, LockfileError } from './util/errors.js';

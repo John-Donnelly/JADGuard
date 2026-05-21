@@ -17,7 +17,9 @@ export class JsonReporter implements Reporter {
         type: report.scanType,
         startedAt: report.startedAt,
         finishedAt: report.finishedAt,
-        lockfile: { kind: report.lockfileKind, path: report.lockfilePath },
+        lockfile: report.lockfileKind
+          ? { kind: report.lockfileKind, path: report.lockfilePath ?? null }
+          : null,
       },
       project: {
         name: report.project.name ?? null,

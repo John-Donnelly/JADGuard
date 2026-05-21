@@ -96,6 +96,7 @@ export class PrettyReporter implements Reporter {
   }
 
   private renderScope(report: Report): string {
+    if (!report.lockfileKind) return 'no lockfile — nothing to evaluate';
     const parts = [
       `${report.dependenciesInScope} of ${report.dependenciesScanned} dependencies evaluated`,
       `${report.lockfileKind} lockfile`,

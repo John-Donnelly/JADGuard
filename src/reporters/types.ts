@@ -11,9 +11,10 @@ export interface Report {
   verdict: Verdict;
   scanType: ScanType;
   project: ProjectInfo;
-  lockfileKind: LockfileKind;
-  /** Project-relative path of the scanned lockfile. */
-  lockfilePath: string;
+  /** The scanned lockfile's format, or `undefined` when the project has none. */
+  lockfileKind?: LockfileKind;
+  /** Project-relative path of the scanned lockfile, when there is one. */
+  lockfilePath?: string;
   guardVersion: string;
   /** Total dependencies recorded in the lockfile. */
   dependenciesScanned: number;
