@@ -4,6 +4,7 @@ import type { Cache } from '../../integrations/cache.js';
 import type { OsvClient } from '../../integrations/osv.js';
 import type { ProjectInfo } from '../../integrations/package-manager.js';
 import type { RegistryClient } from '../../integrations/registry.js';
+import type { TarballClient } from '../../integrations/tarball.js';
 import type { ParsedLockfile } from './lockfile/types.js';
 
 /** `scan` evaluates only changed dependencies; `audit` evaluates them all. */
@@ -31,6 +32,12 @@ export interface GateServices {
   registry: RegistryClient;
   osv: OsvClient;
   cache: Cache;
+  /**
+   * Tarball fetcher / safe-extractor. Absent in `--offline` mode and in unit
+   * tests that don't need tarball-level checks. Rules that require it must
+   * degrade gracefully when it is not provided.
+   */
+  tarballs?: TarballClient;
 }
 
 /** Everything a dependency rule needs to produce findings. */
