@@ -8,6 +8,14 @@ export interface DistInfo {
   hasAttestations: boolean;
 }
 
+/** The `repository` block of a version manifest, normalised. */
+export interface RepositoryInfo {
+  /** Repository URL as declared in the version manifest. */
+  url?: string;
+  /** Sub-directory within the repository, when the package is in a monorepo. */
+  directory?: string;
+}
+
 /** Publisher / version-position info used by the `maintainer` rule. */
 export interface MaintainerInfo {
   /** npm username who published this version, if recorded in the packument. */
@@ -52,6 +60,12 @@ export interface RegistryClient {
    * Throws on lookup failure.
    */
   getRegistryInstallScript(name: string, version: string): Promise<boolean | undefined>;
+  /**
+   * The repository block declared in the version manifest, normalised to an
+   * object form. Returns `undefined` when no repository is declared or the
+   * version is unknown.
+   */
+  getRepositoryInfo(name: string, version: string): Promise<RepositoryInfo | undefined>;
 }
 
 export interface HttpRegistryClientOptions {
@@ -85,6 +99,8 @@ interface PackumentVersion {
   hasInstallScript?: boolean;
   /** True when the version's manifest exists in the packument at all. */
   present?: boolean;
+  /** Normalised `repository` block from the version manifest. */
+  repository?: RepositoryInfo;
 }
 
 interface PackumentDist {
@@ -185,6 +201,14 @@ export class HttpRegistryClient implements RegistryClient {
     return entry.hasInstallScript === true;
   }
 
+  async getRepositoryInfo(
+    name: string,
+    version: string,
+  ): Promise<RepositoryInfo | undefined> {
+    const packument = await this.getPackument(name);
+    return packument?.versions[version]?.repository;
+  }
+
   /**
    * Fetches and caches the registry packument for `name`. Returns `undefined`
    * for a 404 (package not found) and throws on other failures so the caller
@@ -262,6 +286,18 @@ export class HttpRegistryClient implements RegistryClient {
           typeof s.preinstall === 'string' ||
           typeof s.install === 'string' ||
           typeof s.postinstall === 'string';
+      }
+      // npm normalises `repository` to an object, but older publishes left it
+      // a bare URL string. Handle both.
+      const repo = data.repository;
+      if (repo && typeof repo === 'object') {
+        const r = repo as Record<string, unknown>;
+        const info: RepositoryInfo = {};
+        if (typeof r.url === 'string') info.url = r.url;
+        if (typeof r.directory === 'string') info.directory = r.directory;
+        if (info.url || info.directory) entry.repository = info;
+      } else if (typeof repo === 'string') {
+        entry.repository = { url: repo };
       }
       versions[version] = entry;
     }

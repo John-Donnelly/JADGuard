@@ -4,6 +4,7 @@ export type {
   RegistryClient,
   DistInfo,
   MaintainerInfo,
+  RepositoryInfo,
   HttpRegistryClientOptions,
 } from './registry.js';
 export { HttpRegistryClient } from './registry.js';
