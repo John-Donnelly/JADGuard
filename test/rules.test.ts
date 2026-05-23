@@ -1427,6 +1427,117 @@ describe('process-spawn rule (code gate)', () => {
   });
 });
 
+describe('obfuscation rule (code gate)', () => {
+  const codeDep = makeDep({
+    name: 'mini-shai',
+    version: '1.0.0',
+    resolved: 'https://registry.test/mini-shai.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  function base64Run(n: number): string {
+    // 64 chars of varied base64-alphabet content per literal.
+    let chunk = '';
+    for (let i = 0; i < 64; i++) {
+      chunk += 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'[i % 64];
+    }
+    return Array.from({ length: n }, () => `"${chunk}"`).join(',');
+  }
+
+  it('flags many long base64 literals (Mini Shai-Hulud shape)', async () => {
+    const { obfuscationRule } = await import(
+      '../src/gates/code/rules/obfuscation.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'mini-shai@1.0.0': buildExtracted([
+            { path: 'index.js', content: `const blobs = [${base64Run(40)}];` },
+          ]),
+        }),
+      },
+    });
+    const findings = await obfuscationRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+  });
+
+  it('flags a long minified line carrying encoded blobs (Shai-Hulud shape)', async () => {
+    const { obfuscationRule } = await import(
+      '../src/gates/code/rules/obfuscation.js'
+    );
+    const bigLine =
+      'var a=1;'.repeat(15_000) + // pad past the 100k-char threshold
+      `var x=[${base64Run(5)}];`;
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'mini-shai@1.0.0': buildExtracted([
+            { path: 'bundle.min.js', content: bigLine },
+          ]),
+        }),
+      },
+    });
+    expect(await obfuscationRule.run(ctx)).toHaveLength(1);
+  });
+
+  it('does not flag a long minified line WITHOUT encoded blobs (legitimate minified output)', async () => {
+    const { obfuscationRule } = await import(
+      '../src/gates/code/rules/obfuscation.js'
+    );
+    const minified = 'var a=1;'.repeat(20_000); // very long line, no base64/hex
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'mini-shai@1.0.0': buildExtracted([
+            { path: 'bundle.min.js', content: minified },
+          ]),
+        }),
+      },
+    });
+    expect(await obfuscationRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('does not flag ordinary source code', async () => {
+    const { obfuscationRule } = await import(
+      '../src/gates/code/rules/obfuscation.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'mini-shai@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "const x = 'hello';",
+                'function go() { return x.length; }',
+                'module.exports = go;',
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await obfuscationRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
