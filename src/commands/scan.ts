@@ -53,6 +53,8 @@ export interface ScanOptions {
   baseRef?: string;
   /** Force the code gate on for this run, overriding config.codeGate.enabled. */
   codeGate?: boolean;
+  /** Restrict the run to only these rule ids (used by `verify-signatures`). */
+  onlyRules?: readonly string[];
 }
 
 export interface ScanResult {
@@ -263,6 +265,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     disabledRuleIds,
     severityOverrides,
     includeCodeGate: config.codeGate.enabled,
+    ...(options.onlyRules ? { onlyRuleIds: new Set(options.onlyRules) } : {}),
   });
 
   // Append chain findings only when the code gate ran — they describe

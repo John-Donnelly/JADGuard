@@ -79,6 +79,13 @@ export interface DependencyGateOptions {
   severityOverrides?: Record<string, Severity>;
   /** Append the AST code-gate rule catalog. Off by default in v0.x. */
   includeCodeGate?: boolean;
+  /**
+   * Restrict the run to only these rule ids — used by the
+   * `verify-signatures` command (single-rule narrow check). Applied before
+   * the offline filter, so a single rule that is also network-dependent
+   * still gets dropped under `--offline`.
+   */
+  onlyRuleIds?: ReadonlySet<string>;
 }
 
 /** Runs the dependency gate's rules against a prepared context. */
@@ -89,6 +96,9 @@ export async function runDependencyGate(
   let rules: DependencyRule[] = dependencyRuleCatalog();
   if (options.includeCodeGate) {
     rules = [...rules, ...codeRuleCatalog()];
+  }
+  if (options.onlyRuleIds) {
+    rules = rules.filter((rule) => options.onlyRuleIds!.has(rule.id));
   }
   if (options.offline) {
     rules = rules.filter((rule) => !NETWORK_RULE_IDS.has(rule.id));
