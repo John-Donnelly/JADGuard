@@ -1192,6 +1192,132 @@ describe('typosquat rule (experimental)', () => {
   });
 });
 
+describe('dynamic-exec rule (code gate)', () => {
+  const codeDep = makeDep({
+    name: 'evil',
+    version: '1.0.0',
+    resolved: 'https://registry.test/evil.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  it('flags eval() in installed source', async () => {
+    const { dynamicExecRule } = await import(
+      '../src/gates/code/rules/dynamic-exec.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'evil@1.0.0': buildExtracted([
+            { path: 'index.js', content: 'export function go(p) { eval(p); }' },
+          ]),
+        }),
+      },
+    });
+    const findings = await dynamicExecRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+    expect(findings[0]?.title).toContain('eval(...)');
+  });
+
+  it('flags new Function(...)', async () => {
+    const { dynamicExecRule } = await import(
+      '../src/gates/code/rules/dynamic-exec.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'evil@1.0.0': buildExtracted([
+            { path: 'index.js', content: 'const fn = new Function("x", "return x + 1");' },
+          ]),
+        }),
+      },
+    });
+    expect((await dynamicExecRule.run(ctx))).toHaveLength(1);
+  });
+
+  it('flags vm.runInThisContext(...)', async () => {
+    const { dynamicExecRule } = await import(
+      '../src/gates/code/rules/dynamic-exec.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'evil@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: 'const vm = require("vm");\nvm.runInThisContext(code);',
+            },
+          ]),
+        }),
+      },
+    });
+    expect((await dynamicExecRule.run(ctx))).toHaveLength(1);
+  });
+
+  it('does not flag eval() inside a string or comment', async () => {
+    const { dynamicExecRule } = await import(
+      '../src/gates/code/rules/dynamic-exec.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'evil@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "// Avoid eval(arbitraryInput) at all costs!",
+                'const helpText = "Functions like eval() are dangerous.";',
+                'module.exports = helpText;',
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await dynamicExecRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('does not flag obj.eval(...) method calls', async () => {
+    const { dynamicExecRule } = await import(
+      '../src/gates/code/rules/dynamic-exec.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'evil@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content:
+                'const result = parser.eval(input); module.exports = result;',
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await dynamicExecRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
