@@ -4,6 +4,23 @@ import { stripBom } from '../../../util/text.js';
 import { dedupePackages, type LockfilePackage, type ParsedLockfile } from './types.js';
 
 /**
+ * Renders a pnpm `resolution` block into a single `resolved` source string.
+ * Registry deps record only `integrity` here; non-registry deps (git, file,
+ * directory) put the source information in sibling fields, so downstream rules
+ * that inspect `resolved` see something useful.
+ */
+function resolutionToResolved(resolution: Record<string, unknown>): string | undefined {
+  if (typeof resolution.tarball === 'string') return resolution.tarball;
+  if (resolution.type === 'git' && typeof resolution.repo === 'string') {
+    const commit =
+      typeof resolution.commit === 'string' ? `#${resolution.commit}` : '';
+    return `git+${resolution.repo}${commit}`;
+  }
+  if (typeof resolution.directory === 'string') return `file:${resolution.directory}`;
+  return undefined;
+}
+
+/**
  * Splits a pnpm `packages` map key into name and version. The format has
  * changed repeatedly: v9 uses `name@version`, v6 prefixes a `/`, v5 used
  * `/name/version`, and any of them may carry a peer-dependency suffix.
@@ -64,7 +81,7 @@ export function parsePnpmLockfile(content: string, path: string): ParsedLockfile
         name: split.name,
         version: split.version,
         integrity,
-        resolved: typeof resolution.tarball === 'string' ? resolution.tarball : undefined,
+        resolved: resolutionToResolved(resolution),
         hasInstallScript: entry.requiresBuild === true,
         dev: entry.dev === true,
         // A registry tarball always carries an integrity hash; its absence
