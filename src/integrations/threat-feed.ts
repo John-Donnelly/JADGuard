@@ -24,11 +24,11 @@ let cached: ThreatFeed | undefined;
 /** Loads the threat feed bundled into the Guard release artifact. */
 export function loadBundledThreatFeed(): ThreatFeed {
   if (cached) return cached;
-  const packages = bundled.packages.map((name) => name.toLowerCase());
+  const popularPackages = new Set(bundled.packages.map((name) => name.toLowerCase()));
   cached = {
-    popularPackages: new Set(packages),
+    popularPackages,
     generatedAt: bundled.generatedAt,
-    popularCount: packages.length,
+    popularCount: popularPackages.size,
     source: bundled.source,
   };
   return cached;
