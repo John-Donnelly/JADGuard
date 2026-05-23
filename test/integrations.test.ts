@@ -147,6 +147,25 @@ describe('HttpRegistryClient', () => {
     });
   });
 
+  it('returns the bundleDependencies (and the legacy bundledDependencies alias)', async () => {
+    const packument = {
+      time: { '1.0.0': '2024-01-01', '2.0.0': '2024-06-01', '3.0.0': '2025-01-01' },
+      versions: {
+        '1.0.0': { bundleDependencies: ['core', 'helper'] },
+        '2.0.0': { bundledDependencies: ['legacy'] },
+        '3.0.0': {},
+      },
+    };
+    const client = new HttpRegistryClient({
+      registry: 'https://registry.test',
+      cache: new MemoryCache(),
+      fetchImpl: fakeFetch(() => new Response(JSON.stringify(packument), { status: 200 })),
+    });
+    expect(await client.getBundleDependencies('pkg', '1.0.0')).toEqual(['core', 'helper']);
+    expect(await client.getBundleDependencies('pkg', '2.0.0')).toEqual(['legacy']);
+    expect(await client.getBundleDependencies('pkg', '3.0.0')).toEqual([]);
+  });
+
   it('returns undefined for an unknown package', async () => {
     const client = new HttpRegistryClient({
       registry: 'https://registry.test',

@@ -40,6 +40,12 @@ export interface RegistryClient {
    * when unknown. Throws on lookup failure.
    */
   getMaintainerInfo(name: string, version: string): Promise<MaintainerInfo | undefined>;
+  /**
+   * Names of dependencies the version declares as bundled (shipped inside the
+   * tarball, bypassing lockfile pinning). Returns an empty array when none
+   * are declared or the version is unknown. Throws on lookup failure.
+   */
+  getBundleDependencies(name: string, version: string): Promise<readonly string[]>;
 }
 
 export interface HttpRegistryClientOptions {
@@ -67,6 +73,8 @@ interface PackumentVersion {
   dist?: PackumentDist;
   /** npm username extracted from the version's `_npmUser` field, if any. */
   npmUser?: string;
+  /** Names from the version's `bundleDependencies` / `bundledDependencies`. */
+  bundleDependencies?: string[];
 }
 
 interface PackumentDist {
@@ -152,6 +160,11 @@ export class HttpRegistryClient implements RegistryClient {
     return result;
   }
 
+  async getBundleDependencies(name: string, version: string): Promise<readonly string[]> {
+    const packument = await this.getPackument(name);
+    return packument?.versions[version]?.bundleDependencies ?? [];
+  }
+
   /**
    * Fetches and caches the registry packument for `name`. Returns `undefined`
    * for a 404 (package not found) and throws on other failures so the caller
@@ -214,6 +227,12 @@ export class HttpRegistryClient implements RegistryClient {
       if (npmUser && typeof npmUser === 'object') {
         const name = (npmUser as Record<string, unknown>).name;
         if (typeof name === 'string') entry.npmUser = name;
+      }
+      // npm accepts both `bundleDependencies` and the legacy `bundledDependencies`.
+      const bundle = data.bundleDependencies ?? data.bundledDependencies;
+      if (Array.isArray(bundle)) {
+        const names = bundle.filter((item): item is string => typeof item === 'string');
+        if (names.length > 0) entry.bundleDependencies = names;
       }
       versions[version] = entry;
     }

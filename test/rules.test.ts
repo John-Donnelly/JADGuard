@@ -422,6 +422,46 @@ describe('maintainer rule', () => {
   });
 });
 
+describe('bundled-deps rule', () => {
+  it('flags a package that declares bundleDependencies', async () => {
+    const { bundledDepsRule } = await import(
+      '../src/gates/dependency/rules/bundled-deps.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'cli', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, { 'cli@1.0.0': ['core', 'helper'] }),
+      },
+    });
+    const findings = await bundledDepsRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+    expect(findings[0]?.data?.bundled).toEqual(['core', 'helper']);
+  });
+
+  it('is quiet for a package with no bundled deps', async () => {
+    const { bundledDepsRule } = await import(
+      '../src/gates/dependency/rules/bundled-deps.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'lodash', version: '4.17.21' })],
+    });
+    expect(await bundledDepsRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('skips external dependencies', async () => {
+    const { bundledDepsRule } = await import(
+      '../src/gates/dependency/rules/bundled-deps.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'forked', version: '1.0.0', external: true })],
+    });
+    expect(await bundledDepsRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({

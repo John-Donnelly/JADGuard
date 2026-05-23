@@ -14,11 +14,13 @@ export function stubRegistry(
   times: Record<string, string>,
   distInfo: Record<string, DistInfo> = {},
   maintainerInfo: Record<string, MaintainerInfo> = {},
+  bundled: Record<string, readonly string[]> = {},
 ): RegistryClient {
   return {
     getPublishTime: async (name, version) => times[`${name}@${version}`],
     getDistInfo: async (name, version) => distInfo[`${name}@${version}`],
     getMaintainerInfo: async (name, version) => maintainerInfo[`${name}@${version}`],
+    getBundleDependencies: async (name, version) => bundled[`${name}@${version}`] ?? [],
   };
 }
 
@@ -31,6 +33,9 @@ export const failingRegistry: RegistryClient = {
     throw new Error('registry unreachable');
   },
   getMaintainerInfo: async () => {
+    throw new Error('registry unreachable');
+  },
+  getBundleDependencies: async () => {
     throw new Error('registry unreachable');
   },
 };
