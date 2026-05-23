@@ -76,6 +76,17 @@ export interface RegistryClient {
     name: string,
     version: string,
   ): Promise<{ os?: readonly string[]; cpu?: readonly string[] } | undefined>;
+  /**
+   * Recorded `dist.unpackedSize` values for up to `count` versions published
+   * **before** `version`, oldest first. Used by `tarball-anomaly` to build a
+   * size baseline. Entries without an `unpackedSize` are omitted, so the
+   * returned array may be shorter than `count`.
+   */
+  getPriorVersionSizes(
+    name: string,
+    version: string,
+    count: number,
+  ): Promise<readonly number[]>;
 }
 
 export interface HttpRegistryClientOptions {
@@ -120,6 +131,7 @@ interface PackumentVersion {
 interface PackumentDist {
   signatures?: unknown;
   attestations?: unknown;
+  unpackedSize?: number;
 }
 
 /** Encodes a package name for a registry URL, preserving a scope's `@`. */
@@ -236,6 +248,34 @@ export class HttpRegistryClient implements RegistryClient {
     return result;
   }
 
+  async getPriorVersionSizes(
+    name: string,
+    version: string,
+    count: number,
+  ): Promise<readonly number[]> {
+    if (count <= 0) return [];
+    const packument = await this.getPackument(name);
+    if (!packument) return [];
+
+    const ordered = Object.entries(packument.time)
+      .filter(([key]) => key in packument.versions)
+      .map(([v, t]) => ({ version: v, at: Date.parse(t) }))
+      .filter((entry) => Number.isFinite(entry.at))
+      .sort((a, b) => a.at - b.at);
+
+    const index = ordered.findIndex((entry) => entry.version === version);
+    if (index <= 0) return [];
+    const start = Math.max(0, index - count);
+
+    const sizes: number[] = [];
+    for (let i = start; i < index; i++) {
+      const v = ordered[i]!.version;
+      const size = packument.versions[v]?.dist?.unpackedSize;
+      if (typeof size === 'number' && size > 0) sizes.push(size);
+    }
+    return sizes;
+  }
+
   /**
    * Fetches and caches the registry packument for `name`. Returns `undefined`
    * for a 404 (package not found) and throws on other failures so the caller
@@ -292,7 +332,12 @@ export class HttpRegistryClient implements RegistryClient {
       const dist = data.dist;
       if (dist && typeof dist === 'object') {
         const d = dist as Record<string, unknown>;
-        entry.dist = { signatures: d.signatures, attestations: d.attestations };
+        const distEntry: PackumentDist = {
+          signatures: d.signatures,
+          attestations: d.attestations,
+        };
+        if (typeof d.unpackedSize === 'number') distEntry.unpackedSize = d.unpackedSize;
+        entry.dist = distEntry;
       }
       const npmUser = data._npmUser;
       if (npmUser && typeof npmUser === 'object') {

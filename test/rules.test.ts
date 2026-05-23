@@ -766,6 +766,118 @@ describe('native-binary rule', () => {
   });
 });
 
+describe('tarball-anomaly rule', () => {
+  it('flags a version far larger than the package’s recent history', async () => {
+    const { tarballAnomalyRule } = await import(
+      '../src/gates/dependency/rules/tarball-anomaly.js'
+    );
+    const dep = makeDep({
+      name: 'poisoned',
+      version: '2.0.0',
+      resolved: 'https://registry.test/poisoned.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          { 'poisoned@2.0.0': [100_000, 110_000, 105_000, 95_000, 100_000] },
+        ),
+        tarballs: stubTarballs({
+          'poisoned@2.0.0': buildExtracted([
+            { path: 'package.json', content: '{"name":"poisoned"}' },
+            { path: 'bundle.js', content: 'x'.repeat(3_500_000) },
+          ]),
+        }),
+      },
+    });
+    const findings = await tarballAnomalyRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+    expect(findings[0]?.data?.ratio).toBeGreaterThanOrEqual(5);
+  });
+
+  it('does not flag a version within the normal range', async () => {
+    const { tarballAnomalyRule } = await import(
+      '../src/gates/dependency/rules/tarball-anomaly.js'
+    );
+    const dep = makeDep({
+      name: 'stable',
+      version: '2.0.0',
+      resolved: 'https://registry.test/stable.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          { 'stable@2.0.0': [100_000, 110_000, 105_000, 95_000, 120_000] },
+        ),
+        tarballs: stubTarballs({
+          'stable@2.0.0': buildExtracted([
+            { path: 'package.json', content: '{"name":"stable"}' },
+            { path: 'index.js', content: 'x'.repeat(115_000) },
+          ]),
+        }),
+      },
+    });
+    expect(await tarballAnomalyRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('stays silent for fresh packages with too few prior sizes', async () => {
+    const { tarballAnomalyRule } = await import(
+      '../src/gates/dependency/rules/tarball-anomaly.js'
+    );
+    const dep = makeDep({
+      name: 'fresh',
+      version: '0.2.0',
+      resolved: 'https://registry.test/fresh.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          { 'fresh@0.2.0': [50_000] },
+        ),
+        tarballs: stubTarballs({
+          'fresh@0.2.0': buildExtracted([
+            { path: 'huge.js', content: 'x'.repeat(5_000_000) },
+          ]),
+        }),
+      },
+    });
+    expect(await tarballAnomalyRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
