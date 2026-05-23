@@ -30,6 +30,7 @@ Options:
   --cooldown-days <n>   Override the cooldown window, in days
   --base <ref>          Git ref to diff against for \`scan\` (default: HEAD)
   --offline             Skip network-dependent rules (cooldown, advisories)
+  --code                Enable the AST code-gate rules (off by default in v0.x)
   --no-color            Disable coloured output
   --force               (init) Overwrite an existing config file
   -h, --help            Show this help
@@ -59,6 +60,7 @@ const BOOL_FLAGS = new Set([
   '--offline',
   '--no-color',
   '--force',
+  '--code',
   '--help',
   '--version',
   '-h',
@@ -136,6 +138,7 @@ async function runScanCommand(
     failOn: failOnRaw as Severity | undefined,
     cooldownDays,
     baseRef: args.values.get('--base'),
+    ...(args.bools.has('--code') ? { codeGate: true } : {}),
   });
 
   const useColor =

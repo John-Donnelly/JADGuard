@@ -11,6 +11,16 @@ export interface RuleConfig {
   severity?: Severity;
 }
 
+/** Configuration for the AST code-gate rules. */
+export interface CodeGateConfig {
+  /**
+   * Enable the AST code-gate rules (`dynamic-exec`, `process-spawn`,
+   * `obfuscation`, and the behavioural-chain rules from Phase 7). Off by
+   * default in v0.x; the CLI's `--code` flag forces this on for one run.
+   */
+  enabled: boolean;
+}
+
 /** The fully-resolved Guard configuration after defaults are applied. */
 export interface GuardConfig {
   mode: GuardMode;
@@ -31,6 +41,8 @@ export interface GuardConfig {
    * false-positive corpus. Off by default; users opt in per rule id.
    */
   experimental: Record<string, boolean>;
+  /** Code-gate configuration. */
+  codeGate: CodeGateConfig;
 }
 
 export const DEFAULT_CONFIG: GuardConfig = {
@@ -42,6 +54,7 @@ export const DEFAULT_CONFIG: GuardConfig = {
   cooldownDays: 14,
   registry: 'https://registry.npmjs.org',
   experimental: {},
+  codeGate: { enabled: false },
 };
 
 function fail(source: string, message: string): never {
@@ -116,6 +129,7 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
     rules: {},
     ignores: [],
     experimental: {},
+    codeGate: { enabled: false },
   };
 
   if (obj.mode !== undefined) {
@@ -164,6 +178,12 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
         fail(source, `experimental.${key} must be a boolean`);
       }
       config.experimental[key] = value;
+    }
+  }
+  if (obj.codeGate !== undefined) {
+    const codeGate = asObject(obj.codeGate, source, 'codeGate');
+    if (codeGate.enabled !== undefined) {
+      config.codeGate.enabled = asBoolean(codeGate.enabled, source, 'codeGate.enabled');
     }
   }
 
