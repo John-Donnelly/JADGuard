@@ -8,6 +8,7 @@ import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
 import { maintainerRule } from './rules/maintainer.js';
 import { manifestConfusionRule } from './rules/manifest-confusion.js';
+import { manifestTamperingRule } from './rules/manifest-tampering.js';
 import { nativeBinaryRule } from './rules/native-binary.js';
 import { provenanceRule } from './rules/provenance.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
@@ -33,6 +34,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'maintainer',
   'bundled-deps',
   'manifest-confusion',
+  'manifest-tampering',
   'starjacking',
   'native-binary',
   'tarball-anomaly',
@@ -53,6 +55,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     maintainerRule,
     bundledDepsRule,
     manifestConfusionRule,
+    manifestTamperingRule,
     starjackingRule,
     nativeBinaryRule,
     tarballAnomalyRule,
