@@ -6,7 +6,15 @@ import { installScriptsRule } from '../src/gates/dependency/rules/install-script
 import { integrityRule } from '../src/gates/dependency/rules/integrity.js';
 import { selfIntegrityRule } from '../src/gates/dependency/rules/self-integrity.js';
 import { DEFAULT_CONFIG } from '../src/config/schema.js';
-import { failingRegistry, makeContext, makeDep, stubOsv, stubRegistry } from './helpers.js';
+import {
+  buildExtracted,
+  failingRegistry,
+  makeContext,
+  makeDep,
+  stubOsv,
+  stubRegistry,
+  stubTarballs,
+} from './helpers.js';
 
 function lockfile(overrides: Partial<ParsedLockfile>): ParsedLockfile {
   return {
@@ -639,6 +647,122 @@ describe('starjacking rule', () => {
       dependencies: [makeDep({ name: 'shy', version: '1.0.0' })],
     });
     expect(await starjackingRule.run(ctx)).toHaveLength(0);
+  });
+});
+
+describe('native-binary rule', () => {
+  it('flags a .node addon when the package does not declare os/cpu', async () => {
+    const { nativeBinaryRule } = await import(
+      '../src/gates/dependency/rules/native-binary.js'
+    );
+    const dep = makeDep({
+      name: 'sneaky',
+      version: '1.0.0',
+      resolved: 'https://registry.test/sneaky.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'sneaky@1.0.0': buildExtracted([
+            { path: 'package.json', content: '{}' },
+            { path: 'addon.node', content: Buffer.from([0x7f, 0x45, 0x4c, 0x46]) },
+          ]),
+        }),
+      },
+    });
+    const findings = await nativeBinaryRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+  });
+
+  it('flags ELF/PE/Mach-O magic regardless of extension', async () => {
+    const { nativeBinaryRule } = await import(
+      '../src/gates/dependency/rules/native-binary.js'
+    );
+    const dep = makeDep({
+      name: 'masked',
+      version: '1.0.0',
+      resolved: 'https://registry.test/masked.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'masked@1.0.0': buildExtracted([
+            // .bin extension is innocuous, but the content has PE magic
+            { path: 'data.bin', content: Buffer.from([0x4d, 0x5a, 0x90, 0x00]) },
+          ]),
+        }),
+      },
+    });
+    const findings = await nativeBinaryRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect((findings[0]?.data?.binaries as { reason: string }[])[0]?.reason).toMatch(/PE/);
+  });
+
+  it('allowlists packages that declare os/cpu', async () => {
+    const { nativeBinaryRule } = await import(
+      '../src/gates/dependency/rules/native-binary.js'
+    );
+    const dep = makeDep({
+      name: '@esbuild/linux-x64',
+      version: '1.0.0',
+      resolved: 'https://registry.test/x.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, {}, {}, {}, {
+          '@esbuild/linux-x64@1.0.0': { os: ['linux'], cpu: ['x64'] },
+        }),
+        tarballs: stubTarballs({
+          '@esbuild/linux-x64@1.0.0': buildExtracted([
+            { path: 'package.json', content: '{}' },
+            { path: 'bin/esbuild', content: Buffer.from([0x7f, 0x45, 0x4c, 0x46]) },
+          ]),
+        }),
+      },
+    });
+    expect(await nativeBinaryRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('is silent for a package with no native files', async () => {
+    const { nativeBinaryRule } = await import(
+      '../src/gates/dependency/rules/native-binary.js'
+    );
+    const dep = makeDep({
+      name: 'clean',
+      version: '1.0.0',
+      resolved: 'https://registry.test/clean.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'clean@1.0.0': buildExtracted([
+            { path: 'package.json', content: '{}' },
+            { path: 'index.js', content: 'module.exports = 1;\n' },
+          ]),
+        }),
+      },
+    });
+    expect(await nativeBinaryRule.run(ctx)).toHaveLength(0);
   });
 });
 

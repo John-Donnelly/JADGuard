@@ -66,6 +66,16 @@ export interface RegistryClient {
    * version is unknown.
    */
   getRepositoryInfo(name: string, version: string): Promise<RepositoryInfo | undefined>;
+  /**
+   * Declared `os` / `cpu` constraints from the version manifest. A package
+   * that declares either is, by definition, intentionally platform-specific
+   * — used by the `native-binary` rule to allowlist legitimate native deps.
+   * Returns `undefined` when the version is unknown.
+   */
+  getNativeFlags(
+    name: string,
+    version: string,
+  ): Promise<{ os?: readonly string[]; cpu?: readonly string[] } | undefined>;
 }
 
 export interface HttpRegistryClientOptions {
@@ -101,6 +111,10 @@ interface PackumentVersion {
   present?: boolean;
   /** Normalised `repository` block from the version manifest. */
   repository?: RepositoryInfo;
+  /** Declared `os` constraints from the version manifest. */
+  os?: string[];
+  /** Declared `cpu` constraints from the version manifest. */
+  cpu?: string[];
 }
 
 interface PackumentDist {
@@ -209,6 +223,19 @@ export class HttpRegistryClient implements RegistryClient {
     return packument?.versions[version]?.repository;
   }
 
+  async getNativeFlags(
+    name: string,
+    version: string,
+  ): Promise<{ os?: readonly string[]; cpu?: readonly string[] } | undefined> {
+    const packument = await this.getPackument(name);
+    const entry = packument?.versions[version];
+    if (!entry?.present) return undefined;
+    const result: { os?: readonly string[]; cpu?: readonly string[] } = {};
+    if (entry.os) result.os = entry.os;
+    if (entry.cpu) result.cpu = entry.cpu;
+    return result;
+  }
+
   /**
    * Fetches and caches the registry packument for `name`. Returns `undefined`
    * for a 404 (package not found) and throws on other failures so the caller
@@ -286,6 +313,16 @@ export class HttpRegistryClient implements RegistryClient {
           typeof s.preinstall === 'string' ||
           typeof s.install === 'string' ||
           typeof s.postinstall === 'string';
+      }
+      const osField = data.os;
+      if (Array.isArray(osField)) {
+        const values = osField.filter((item): item is string => typeof item === 'string');
+        if (values.length > 0) entry.os = values;
+      }
+      const cpuField = data.cpu;
+      if (Array.isArray(cpuField)) {
+        const values = cpuField.filter((item): item is string => typeof item === 'string');
+        if (values.length > 0) entry.cpu = values;
       }
       // npm normalises `repository` to an object, but older publishes left it
       // a bare URL string. Handle both.
