@@ -110,7 +110,7 @@ export const obfuscationRule: DependencyRule = {
           'Legitimate bundle output is reproducible from declared source; obfuscated payloads ' +
           'are not. If the bundle is a known legitimate minified artifact, suppress the ' +
           'finding for this package via `ignores` with a brief justification.',
-        data: { flagged },
+        data: { files: flagged.map((f) => f.path), flagged },
         suppressible: true,
       });
     }
