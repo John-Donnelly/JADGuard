@@ -3,6 +3,7 @@ import type { Severity } from '../../engine/severity.js';
 import { advisoriesRule } from './rules/advisories.js';
 import { bundledDepsRule } from './rules/bundled-deps.js';
 import { cooldownRule } from './rules/cooldown.js';
+import { dependencyConfusionRule } from './rules/dependency-confusion.js';
 import { gitDepRule } from './rules/git-dep.js';
 import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
@@ -51,6 +52,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     integrityRule,
     gitDepRule,
     unpinnedRangesRule,
+    dependencyConfusionRule,
     provenanceRule,
     maintainerRule,
     bundledDepsRule,

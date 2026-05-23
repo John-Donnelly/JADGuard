@@ -29,7 +29,12 @@ function lockfile(overrides: Partial<ParsedLockfile>): ParsedLockfile {
 describe('install-scripts rule', () => {
   it('flags an install script as high risk when scripts are not ignored', async () => {
     const ctx = makeContext({
-      project: { root: '/p', ignoreScripts: false, manifestRanges: {} },
+      project: {
+        root: '/p',
+        ignoreScripts: false,
+        manifestRanges: {},
+        internalScopes: {},
+      },
       dependencies: [makeDep({ name: 'evil', version: '1.0.0', hasInstallScript: true })],
     });
     const findings = await installScriptsRule.run(ctx);
@@ -39,7 +44,12 @@ describe('install-scripts rule', () => {
 
   it('downgrades to low when the project ignores scripts', async () => {
     const ctx = makeContext({
-      project: { root: '/p', ignoreScripts: true, manifestRanges: {} },
+      project: {
+        root: '/p',
+        ignoreScripts: true,
+        manifestRanges: {},
+        internalScopes: {},
+      },
       dependencies: [makeDep({ name: 'evil', version: '1.0.0', hasInstallScript: true })],
     });
     const findings = await installScriptsRule.run(ctx);
@@ -189,6 +199,7 @@ describe('unpinned-ranges rule', () => {
           chalk: '4.1.2',
           'always-latest': 'latest',
         },
+        internalScopes: {},
       },
     });
     const findings = await unpinnedRangesRule.run(ctx);
@@ -208,6 +219,7 @@ describe('unpinned-ranges rule', () => {
         root: '/p',
         ignoreScripts: false,
         manifestRanges: { lodash: '4.17.21', chalk: '5.3.0' },
+        internalScopes: {},
       },
     });
     expect(await unpinnedRangesRule.run(ctx)).toHaveLength(0);
@@ -974,6 +986,99 @@ describe('manifest-tampering rule', () => {
       },
     });
     expect(await manifestTamperingRule.run(ctx)).toHaveLength(0);
+  });
+});
+
+describe('dependency-confusion rule', () => {
+  it('flags an internal-scope dep that resolved from a different host', async () => {
+    const { dependencyConfusionRule } = await import(
+      '../src/gates/dependency/rules/dependency-confusion.js'
+    );
+    const ctx = makeContext({
+      project: {
+        root: '/p',
+        ignoreScripts: false,
+        manifestRanges: {},
+        internalScopes: { company: 'https://npm.internal.example.com/' },
+      },
+      dependencies: [
+        makeDep({
+          name: '@company/secret-util',
+          version: '1.0.0',
+          resolved:
+            'https://registry.npmjs.org/@company/secret-util/-/secret-util-1.0.0.tgz',
+          integrity: 'sha512-aGVsbG8=',
+        }),
+      ],
+    });
+    const findings = await dependencyConfusionRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('high');
+    expect(findings[0]?.data?.actualHost).toBe('registry.npmjs.org');
+  });
+
+  it('does not flag a dep that resolved from the declared internal host', async () => {
+    const { dependencyConfusionRule } = await import(
+      '../src/gates/dependency/rules/dependency-confusion.js'
+    );
+    const ctx = makeContext({
+      project: {
+        root: '/p',
+        ignoreScripts: false,
+        manifestRanges: {},
+        internalScopes: { company: 'https://npm.internal.example.com/' },
+      },
+      dependencies: [
+        makeDep({
+          name: '@company/secret-util',
+          version: '1.0.0',
+          resolved:
+            'https://npm.internal.example.com/@company/secret-util/-/secret-util-1.0.0.tgz',
+          integrity: 'sha512-aGVsbG8=',
+        }),
+      ],
+    });
+    expect(await dependencyConfusionRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('returns nothing when no internal scopes are declared', async () => {
+    const { dependencyConfusionRule } = await import(
+      '../src/gates/dependency/rules/dependency-confusion.js'
+    );
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({
+          name: '@company/anything',
+          version: '1.0.0',
+          resolved: 'https://registry.npmjs.org/x',
+          integrity: 'sha512-aGVsbG8=',
+        }),
+      ],
+    });
+    expect(await dependencyConfusionRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('ignores unscoped packages', async () => {
+    const { dependencyConfusionRule } = await import(
+      '../src/gates/dependency/rules/dependency-confusion.js'
+    );
+    const ctx = makeContext({
+      project: {
+        root: '/p',
+        ignoreScripts: false,
+        manifestRanges: {},
+        internalScopes: { company: 'https://npm.internal.example.com/' },
+      },
+      dependencies: [
+        makeDep({
+          name: 'lodash',
+          version: '4.17.21',
+          resolved: 'https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz',
+          integrity: 'sha512-aGVsbG8=',
+        }),
+      ],
+    });
+    expect(await dependencyConfusionRule.run(ctx)).toHaveLength(0);
   });
 });
 
