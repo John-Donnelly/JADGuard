@@ -534,6 +534,114 @@ describe('manifest-confusion rule', () => {
   });
 });
 
+describe('starjacking rule', () => {
+  it('flags a package that points at an unrelated repository', async () => {
+    const { starjackingRule } = await import(
+      '../src/gates/dependency/rules/starjacking.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'evil-typosquat', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          { 'evil-typosquat@1.0.0': { url: 'https://github.com/facebook/react' } },
+        ),
+      },
+    });
+    const findings = await starjackingRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+    expect(findings[0]?.data?.declaredRepo).toBe('facebook/react');
+  });
+
+  it('does not flag a matching repository', async () => {
+    const { starjackingRule } = await import(
+      '../src/gates/dependency/rules/starjacking.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'lodash', version: '4.17.21' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          { 'lodash@4.17.21': { url: 'git+https://github.com/lodash/lodash.git' } },
+        ),
+      },
+    });
+    expect(await starjackingRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('accepts a monorepo when the scope matches the repo owner', async () => {
+    const { starjackingRule } = await import(
+      '../src/gates/dependency/rules/starjacking.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: '@vercel/some-helper', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          { '@vercel/some-helper@1.0.0': { url: 'https://github.com/vercel/next.js' } },
+        ),
+      },
+    });
+    expect(await starjackingRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('accepts an explicit monorepo directory', async () => {
+    const { starjackingRule } = await import(
+      '../src/gates/dependency/rules/starjacking.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'unrelated-name', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            'unrelated-name@1.0.0': {
+              url: 'https://github.com/some/monorepo',
+              directory: 'packages/unrelated-name',
+            },
+          },
+        ),
+      },
+    });
+    expect(await starjackingRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('is silent when no repository is declared', async () => {
+    const { starjackingRule } = await import(
+      '../src/gates/dependency/rules/starjacking.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'shy', version: '1.0.0' })],
+    });
+    expect(await starjackingRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({

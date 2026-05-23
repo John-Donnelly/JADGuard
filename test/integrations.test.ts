@@ -187,6 +187,35 @@ describe('HttpRegistryClient', () => {
     expect(await client.getRegistryInstallScript('pkg', '9.9.9')).toBeUndefined();
   });
 
+  it('normalises both string and object forms of `repository`', async () => {
+    const packument = {
+      time: { '1.0.0': '2024-01-01', '2.0.0': '2024-06-01', '3.0.0': '2025-01-01' },
+      versions: {
+        '1.0.0': {
+          repository: {
+            url: 'git+https://github.com/owner/repo.git',
+            directory: 'packages/pkg',
+          },
+        },
+        '2.0.0': { repository: 'https://github.com/owner/repo' },
+        '3.0.0': {},
+      },
+    };
+    const client = new HttpRegistryClient({
+      registry: 'https://registry.test',
+      cache: new MemoryCache(),
+      fetchImpl: fakeFetch(() => new Response(JSON.stringify(packument), { status: 200 })),
+    });
+    expect(await client.getRepositoryInfo('pkg', '1.0.0')).toEqual({
+      url: 'git+https://github.com/owner/repo.git',
+      directory: 'packages/pkg',
+    });
+    expect(await client.getRepositoryInfo('pkg', '2.0.0')).toEqual({
+      url: 'https://github.com/owner/repo',
+    });
+    expect(await client.getRepositoryInfo('pkg', '3.0.0')).toBeUndefined();
+  });
+
   it('returns undefined for an unknown package', async () => {
     const client = new HttpRegistryClient({
       registry: 'https://registry.test',

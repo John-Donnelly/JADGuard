@@ -7,6 +7,7 @@ import type {
   DistInfo,
   MaintainerInfo,
   RegistryClient,
+  RepositoryInfo,
 } from '../src/integrations/registry.js';
 
 /** A registry client that returns canned packument-derived data. */
@@ -16,6 +17,7 @@ export function stubRegistry(
   maintainerInfo: Record<string, MaintainerInfo> = {},
   bundled: Record<string, readonly string[]> = {},
   installScript: Record<string, boolean> = {},
+  repository: Record<string, RepositoryInfo> = {},
 ): RegistryClient {
   return {
     getPublishTime: async (name, version) => times[`${name}@${version}`],
@@ -23,6 +25,7 @@ export function stubRegistry(
     getMaintainerInfo: async (name, version) => maintainerInfo[`${name}@${version}`],
     getBundleDependencies: async (name, version) => bundled[`${name}@${version}`] ?? [],
     getRegistryInstallScript: async (name, version) => installScript[`${name}@${version}`],
+    getRepositoryInfo: async (name, version) => repository[`${name}@${version}`],
   };
 }
 
@@ -41,6 +44,9 @@ export const failingRegistry: RegistryClient = {
     throw new Error('registry unreachable');
   },
   getRegistryInstallScript: async () => {
+    throw new Error('registry unreachable');
+  },
+  getRepositoryInfo: async () => {
     throw new Error('registry unreachable');
   },
 };

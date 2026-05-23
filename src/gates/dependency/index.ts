@@ -10,6 +10,7 @@ import { maintainerRule } from './rules/maintainer.js';
 import { manifestConfusionRule } from './rules/manifest-confusion.js';
 import { provenanceRule } from './rules/provenance.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
+import { starjackingRule } from './rules/starjacking.js';
 import { unpinnedRangesRule } from './rules/unpinned-ranges.js';
 import type { DependencyGateContext, DependencyRule } from './types.js';
 
@@ -30,6 +31,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'maintainer',
   'bundled-deps',
   'manifest-confusion',
+  'starjacking',
 ]);
 
 /**
@@ -47,6 +49,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     maintainerRule,
     bundledDepsRule,
     manifestConfusionRule,
+    starjackingRule,
     cooldownRule,
     advisoriesRule,
   ];
