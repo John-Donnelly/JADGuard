@@ -74,6 +74,7 @@ export type {
   Cache,
   RegistryClient,
   DistInfo,
+  MaintainerInfo,
   OsvClient,
   GitClient,
   ProjectInfo,

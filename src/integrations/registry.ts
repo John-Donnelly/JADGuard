@@ -8,6 +8,20 @@ export interface DistInfo {
   hasAttestations: boolean;
 }
 
+/** Publisher / version-position info used by the `maintainer` rule. */
+export interface MaintainerInfo {
+  /** npm username who published this version, if recorded in the packument. */
+  publisher?: string;
+  /** True when this version is the package's very first published version. */
+  isFirstVersion: boolean;
+  /**
+   * True when `publisher` is recorded but did not publish any earlier version
+   * of this package. The signal Shai-Hulud-class account-addition attacks
+   * leave in the packument.
+   */
+  isNewPublisher: boolean;
+}
+
 /** Looks up registry packument data used by the dependency rules. */
 export interface RegistryClient {
   /**
@@ -21,6 +35,11 @@ export interface RegistryClient {
    * package or version is unknown. Throws on lookup failure.
    */
   getDistInfo(name: string, version: string): Promise<DistInfo | undefined>;
+  /**
+   * Publisher and version-position info for an exact version, or `undefined`
+   * when unknown. Throws on lookup failure.
+   */
+  getMaintainerInfo(name: string, version: string): Promise<MaintainerInfo | undefined>;
 }
 
 export interface HttpRegistryClientOptions {
@@ -46,6 +65,8 @@ interface PackumentData {
 
 interface PackumentVersion {
   dist?: PackumentDist;
+  /** npm username extracted from the version's `_npmUser` field, if any. */
+  npmUser?: string;
 }
 
 interface PackumentDist {
@@ -89,6 +110,46 @@ export class HttpRegistryClient implements RegistryClient {
       signatures: Array.isArray(dist.signatures) ? dist.signatures.length : 0,
       hasAttestations: dist.attestations !== undefined && dist.attestations !== null,
     };
+  }
+
+  async getMaintainerInfo(
+    name: string,
+    version: string,
+  ): Promise<MaintainerInfo | undefined> {
+    const packument = await this.getPackument(name);
+    if (!packument?.versions[version]) return undefined;
+
+    // Order versions by their recorded publish time. The `time` map also
+    // contains `created` and `modified` entries; filter to actual versions.
+    const versionsByTime = Object.entries(packument.time)
+      .filter(([key]) => key in packument.versions)
+      .map(([v, t]) => ({ version: v, at: Date.parse(t) }))
+      .filter((entry) => Number.isFinite(entry.at))
+      .sort((a, b) => a.at - b.at);
+
+    const index = versionsByTime.findIndex((entry) => entry.version === version);
+    const publisher = packument.versions[version]?.npmUser;
+    const result: MaintainerInfo = {
+      isFirstVersion: false,
+      isNewPublisher: false,
+    };
+    if (publisher) result.publisher = publisher;
+
+    if (index === -1) return result; // version unordered; can't determine history
+    if (index === 0) {
+      result.isFirstVersion = true;
+      return result;
+    }
+    if (!publisher) return result;
+
+    const priorPublishers = new Set<string>();
+    for (let i = 0; i < index; i++) {
+      const v = versionsByTime[i]!.version;
+      const u = packument.versions[v]?.npmUser;
+      if (u) priorPublishers.add(u);
+    }
+    result.isNewPublisher = !priorPublishers.has(publisher);
+    return result;
   }
 
   /**
@@ -142,12 +203,19 @@ export class HttpRegistryClient implements RegistryClient {
     const versions: Record<string, PackumentVersion> = {};
     for (const [version, info] of Object.entries(body.versions ?? {})) {
       if (!info || typeof info !== 'object') continue;
-      const dist = (info as Record<string, unknown>).dist;
-      if (!dist || typeof dist !== 'object') continue;
-      const d = dist as Record<string, unknown>;
-      versions[version] = {
-        dist: { signatures: d.signatures, attestations: d.attestations },
-      };
+      const data = info as Record<string, unknown>;
+      const entry: PackumentVersion = {};
+      const dist = data.dist;
+      if (dist && typeof dist === 'object') {
+        const d = dist as Record<string, unknown>;
+        entry.dist = { signatures: d.signatures, attestations: d.attestations };
+      }
+      const npmUser = data._npmUser;
+      if (npmUser && typeof npmUser === 'object') {
+        const name = (npmUser as Record<string, unknown>).name;
+        if (typeof name === 'string') entry.npmUser = name;
+      }
+      versions[version] = entry;
     }
 
     return { time, versions };
