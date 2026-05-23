@@ -242,6 +242,87 @@ describe('cooldown rule', () => {
   });
 });
 
+describe('provenance rule', () => {
+  it('flags a version with neither signatures nor attestations', async () => {
+    const { provenanceRule } = await import(
+      '../src/gates/dependency/rules/provenance.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'orphan', version: '0.1.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          { 'orphan@0.1.0': { signatures: 0, hasAttestations: false } },
+        ),
+      },
+    });
+    const findings = await provenanceRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('low');
+  });
+
+  it('passes a Sigstore-signed version', async () => {
+    const { provenanceRule } = await import(
+      '../src/gates/dependency/rules/provenance.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'signed', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          { 'signed@1.0.0': { signatures: 1, hasAttestations: false } },
+        ),
+      },
+    });
+    expect(await provenanceRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('passes a version with SLSA attestations', async () => {
+    const { provenanceRule } = await import(
+      '../src/gates/dependency/rules/provenance.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'attested', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          { 'attested@1.0.0': { signatures: 0, hasAttestations: true } },
+        ),
+      },
+    });
+    expect(await provenanceRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('skips external (git/file/workspace) dependencies', async () => {
+    const { provenanceRule } = await import(
+      '../src/gates/dependency/rules/provenance.js'
+    );
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({ name: 'forked', version: '1.0.0', external: true }),
+      ],
+    });
+    expect(await provenanceRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('stays silent when the registry returns no data for the version', async () => {
+    const { provenanceRule } = await import(
+      '../src/gates/dependency/rules/provenance.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'unknown', version: '9.9.9' })],
+      // no dist info recorded → getDistInfo returns undefined
+    });
+    expect(await provenanceRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
