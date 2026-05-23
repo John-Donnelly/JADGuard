@@ -1538,6 +1538,144 @@ describe('obfuscation rule (code gate)', () => {
   });
 });
 
+describe('secret-access rule (code gate)', () => {
+  const codeDep = makeDep({
+    name: 'scanner',
+    version: '1.0.0',
+    resolved: 'https://registry.test/scanner.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  it('flags reads of NPM_TOKEN and GITHUB_TOKEN', async () => {
+    const { secretAccessRule } = await import(
+      '../src/gates/code/rules/secret-access.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'scanner@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                'const npmToken = process.env.NPM_TOKEN;',
+                'const ghToken = process.env.GITHUB_TOKEN;',
+                'module.exports = { npmToken, ghToken };',
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    const findings = await secretAccessRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+  });
+
+  it('flags references to credential filesystem paths', async () => {
+    const { secretAccessRule } = await import(
+      '../src/gates/code/rules/secret-access.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'scanner@1.0.0': buildExtracted([
+            {
+              path: 'reader.js',
+              content: [
+                "const fs = require('fs');",
+                "const npmrc = fs.readFileSync(process.env.HOME + '/.npmrc', 'utf8');",
+                "const aws = fs.readFileSync(process.env.HOME + '/.aws/credentials', 'utf8');",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await secretAccessRule.run(ctx)).toHaveLength(1);
+  });
+
+  it('flags AWS_* prefix env vars', async () => {
+    const { secretAccessRule } = await import(
+      '../src/gates/code/rules/secret-access.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'scanner@1.0.0': buildExtracted([
+            {
+              path: 'aws.js',
+              content: 'const key = process.env.AWS_SECRET_ACCESS_KEY;',
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await secretAccessRule.run(ctx)).toHaveLength(1);
+  });
+
+  it('does not flag harmless env access', async () => {
+    const { secretAccessRule } = await import(
+      '../src/gates/code/rules/secret-access.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'scanner@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content:
+                "const log = process.env.LOG_LEVEL || 'info'; module.exports = log;",
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await secretAccessRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('does not flag secrets mentioned only in comments', async () => {
+    const { secretAccessRule } = await import(
+      '../src/gates/code/rules/secret-access.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'scanner@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                '// This package never reads process.env.NPM_TOKEN.',
+                "module.exports = function () { return 'safe'; };",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await secretAccessRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
