@@ -1,6 +1,6 @@
 import { runRules, type RunnerResult } from '../../engine/runner.js';
 import type { Severity } from '../../engine/severity.js';
-import { codeRuleCatalog } from '../code/index.js';
+import { codeRuleCatalog, CODE_RULE_IDS } from '../code/index.js';
 import { advisoriesRule } from './rules/advisories.js';
 import { bundledDepsRule } from './rules/bundled-deps.js';
 import { cooldownRule } from './rules/cooldown.js';
@@ -41,6 +41,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'starjacking',
   'native-binary',
   'tarball-anomaly',
+  ...CODE_RULE_IDS,
 ]);
 
 /**
