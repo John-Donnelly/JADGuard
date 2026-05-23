@@ -166,6 +166,27 @@ describe('HttpRegistryClient', () => {
     expect(await client.getBundleDependencies('pkg', '3.0.0')).toEqual([]);
   });
 
+  it('reports the install-script declaration from the registry packument', async () => {
+    const packument = {
+      time: { '1.0.0': '2024-01-01', '2.0.0': '2024-06-01', '3.0.0': '2025-01-01' },
+      versions: {
+        '1.0.0': { scripts: { postinstall: 'node setup.js' } },
+        '2.0.0': { scripts: { test: 'vitest' } },
+        '3.0.0': { },
+      },
+    };
+    const client = new HttpRegistryClient({
+      registry: 'https://registry.test',
+      cache: new MemoryCache(),
+      fetchImpl: fakeFetch(() => new Response(JSON.stringify(packument), { status: 200 })),
+    });
+    expect(await client.getRegistryInstallScript('pkg', '1.0.0')).toBe(true);
+    expect(await client.getRegistryInstallScript('pkg', '2.0.0')).toBe(false);
+    expect(await client.getRegistryInstallScript('pkg', '3.0.0')).toBe(false);
+    // Unknown version: undefined.
+    expect(await client.getRegistryInstallScript('pkg', '9.9.9')).toBeUndefined();
+  });
+
   it('returns undefined for an unknown package', async () => {
     const client = new HttpRegistryClient({
       registry: 'https://registry.test',

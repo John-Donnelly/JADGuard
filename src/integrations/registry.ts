@@ -46,6 +46,12 @@ export interface RegistryClient {
    * are declared or the version is unknown. Throws on lookup failure.
    */
   getBundleDependencies(name: string, version: string): Promise<readonly string[]>;
+  /**
+   * Whether the registry packument declares an install/preinstall/postinstall
+   * script for the version. Returns `undefined` when the version is unknown.
+   * Throws on lookup failure.
+   */
+  getRegistryInstallScript(name: string, version: string): Promise<boolean | undefined>;
 }
 
 export interface HttpRegistryClientOptions {
@@ -75,6 +81,10 @@ interface PackumentVersion {
   npmUser?: string;
   /** Names from the version's `bundleDependencies` / `bundledDependencies`. */
   bundleDependencies?: string[];
+  /** True when the version declares any of preinstall / install / postinstall. */
+  hasInstallScript?: boolean;
+  /** True when the version's manifest exists in the packument at all. */
+  present?: boolean;
 }
 
 interface PackumentDist {
@@ -165,6 +175,16 @@ export class HttpRegistryClient implements RegistryClient {
     return packument?.versions[version]?.bundleDependencies ?? [];
   }
 
+  async getRegistryInstallScript(
+    name: string,
+    version: string,
+  ): Promise<boolean | undefined> {
+    const packument = await this.getPackument(name);
+    const entry = packument?.versions[version];
+    if (!entry?.present) return undefined;
+    return entry.hasInstallScript === true;
+  }
+
   /**
    * Fetches and caches the registry packument for `name`. Returns `undefined`
    * for a 404 (package not found) and throws on other failures so the caller
@@ -217,7 +237,7 @@ export class HttpRegistryClient implements RegistryClient {
     for (const [version, info] of Object.entries(body.versions ?? {})) {
       if (!info || typeof info !== 'object') continue;
       const data = info as Record<string, unknown>;
-      const entry: PackumentVersion = {};
+      const entry: PackumentVersion = { present: true };
       const dist = data.dist;
       if (dist && typeof dist === 'object') {
         const d = dist as Record<string, unknown>;
@@ -233,6 +253,15 @@ export class HttpRegistryClient implements RegistryClient {
       if (Array.isArray(bundle)) {
         const names = bundle.filter((item): item is string => typeof item === 'string');
         if (names.length > 0) entry.bundleDependencies = names;
+      }
+      // Install-script declarations live under `scripts.{preinstall,install,postinstall}`.
+      const scripts = data.scripts;
+      if (scripts && typeof scripts === 'object') {
+        const s = scripts as Record<string, unknown>;
+        entry.hasInstallScript =
+          typeof s.preinstall === 'string' ||
+          typeof s.install === 'string' ||
+          typeof s.postinstall === 'string';
       }
       versions[version] = entry;
     }

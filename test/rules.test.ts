@@ -462,6 +462,78 @@ describe('bundled-deps rule', () => {
   });
 });
 
+describe('manifest-confusion rule', () => {
+  it('flags a version where the lockfile says no install script but the registry says yes', async () => {
+    const { manifestConfusionRule } = await import(
+      '../src/gates/dependency/rules/manifest-confusion.js'
+    );
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({ name: 'drifted', version: '1.0.0', hasInstallScript: false }),
+      ],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, {}, { 'drifted@1.0.0': true }),
+      },
+    });
+    const findings = await manifestConfusionRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+  });
+
+  it('is silent when the lockfile already records an install script', async () => {
+    const { manifestConfusionRule } = await import(
+      '../src/gates/dependency/rules/manifest-confusion.js'
+    );
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({ name: 'declared', version: '1.0.0', hasInstallScript: true }),
+      ],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, {}, { 'declared@1.0.0': true }),
+      },
+    });
+    expect(await manifestConfusionRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('is silent when the registry says no install script either', async () => {
+    const { manifestConfusionRule } = await import(
+      '../src/gates/dependency/rules/manifest-confusion.js'
+    );
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({ name: 'agreed', version: '1.0.0', hasInstallScript: false }),
+      ],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, {}, { 'agreed@1.0.0': false }),
+      },
+    });
+    expect(await manifestConfusionRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('reports an info finding when the lockfile cannot record install scripts', async () => {
+    const { manifestConfusionRule } = await import(
+      '../src/gates/dependency/rules/manifest-confusion.js'
+    );
+    const ctx = makeContext({
+      lockfile: {
+        kind: 'yarn-classic',
+        path: '/p/yarn.lock',
+        packages: [],
+        capabilities: { installScripts: false, integrity: true },
+      },
+    });
+    const findings = await manifestConfusionRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('info');
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({

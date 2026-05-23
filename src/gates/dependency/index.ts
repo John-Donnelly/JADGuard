@@ -7,6 +7,7 @@ import { gitDepRule } from './rules/git-dep.js';
 import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
 import { maintainerRule } from './rules/maintainer.js';
+import { manifestConfusionRule } from './rules/manifest-confusion.js';
 import { provenanceRule } from './rules/provenance.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
 import { unpinnedRangesRule } from './rules/unpinned-ranges.js';
@@ -28,6 +29,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'provenance',
   'maintainer',
   'bundled-deps',
+  'manifest-confusion',
 ]);
 
 /**
@@ -44,6 +46,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     provenanceRule,
     maintainerRule,
     bundledDepsRule,
+    manifestConfusionRule,
     cooldownRule,
     advisoriesRule,
   ];
