@@ -1,0 +1,10 @@
+{
+  "name": "scenario-unpinned-ranges",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "chalk": "~5.3.0",
+    "always-fresh": "latest"
+  }
+}

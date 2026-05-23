@@ -1,0 +1,8 @@
+{
+  "name": "scenario-git-dep",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "forked-lib": "git+https://github.com/example/forked-lib.git#abc123"
+  }
+}

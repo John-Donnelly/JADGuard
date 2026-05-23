@@ -1,0 +1,4 @@
+{
+  "summary": "Two typosquatted package names installed: `lodahs` (transposition of `lodash`, distance 1) and `raect` (transposition of `react`, distance 1).",
+  "attack": "The entry vector used by the August 2025 10-package credential-harvester campaign and the typosquat that seeded the Axios DPRK case. Experimental rule, opted into via jadguard.config.json."
+}

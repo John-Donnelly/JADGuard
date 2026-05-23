@@ -23,4 +23,21 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  {
+    // The integration harness is a plain Node-ESM maintenance script.
+    files: ['test/integration/**/*.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+      },
+    },
+    rules: {
+      // try/catch assigns both branches; ESLint can't see the catch path.
+      'no-useless-assignment': 'off',
+    },
+  },
 );

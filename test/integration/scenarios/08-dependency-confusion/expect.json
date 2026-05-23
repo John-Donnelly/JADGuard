@@ -1,0 +1,5 @@
+{
+  "exitCode": 1,
+  "containsRule": "dependency-confusion",
+  "containsText": "FAIL"
+}

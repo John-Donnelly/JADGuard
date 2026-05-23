@@ -1,0 +1,4 @@
+{
+  "summary": "A registry dep is pinned by a collision-prone SHA-1 integrity hash.",
+  "attack": "SHA-1 is collision-prone; a tampered tarball could match the hash. Modern npm always uses sha512."
+}

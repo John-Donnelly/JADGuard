@@ -1,0 +1,4 @@
+{
+  "summary": "Baseline: a known-good project (single exact-pinned popular dep) must pass cleanly.",
+  "attack": "None — control sample."
+}

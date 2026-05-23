@@ -1,0 +1,8 @@
+{
+  "name": "scenario-weak-integrity",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "stale-package": "1.0.0"
+  }
+}

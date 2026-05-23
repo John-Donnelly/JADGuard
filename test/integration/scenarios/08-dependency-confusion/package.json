@@ -1,0 +1,8 @@
+{
+  "name": "scenario-dependency-confusion",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@company/internal-util": "1.0.0"
+  }
+}
