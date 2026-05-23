@@ -46,7 +46,7 @@ everything.
 | `--fail-on <severity>` | Lowest severity that fails the verdict               |
 | `--cooldown-days <n>`  | Cooldown window for the `cooldown` rule              |
 | `--base <ref>`         | Git ref to diff against for `scan` (default `HEAD`)  |
-| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`, `provenance`, `maintainer`, `bundled-deps`, `manifest-confusion`) |
+| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`, `provenance`, `maintainer`, `bundled-deps`, `manifest-confusion`, `manifest-tampering`, `starjacking`, `native-binary`, `tarball-anomaly`) |
 
 ### Exit codes
 
@@ -58,19 +58,23 @@ everything.
 
 ## The dependency gate
 
-| Rule                 | Default  | Network | What it catches                                                          |
-| -------------------- | -------- | :-----: | ------------------------------------------------------------------------ |
-| `install-scripts`    | high\*   |    —    | Dependencies that declare install/lifecycle scripts.                     |
-| `integrity`          | medium   |    —    | Registry deps missing or weakly pinned by integrity hash.                |
-| `git-dep`            | medium   |    —    | Dependencies resolved from git rather than the public registry.          |
-| `unpinned-ranges`    | low      |    —    | Floating `package.json` ranges (caret, tilde, dist-tag, wildcard).       |
-| `provenance`         | low      |    ✓    | Registry deps with no Sigstore signature or SLSA provenance.\*\*         |
-| `maintainer`         | medium   |    ✓    | Versions published by a maintainer with no prior history on the package. |
-| `bundled-deps`       | medium   |    ✓    | Packages that bundle transitive deps inside their own tarball.           |
-| `manifest-confusion` | medium   |    ✓    | Lockfile and registry disagreement on declared install scripts.          |
-| `cooldown`           | medium   |    ✓    | Versions published inside the cooldown window — too new to be vetted.    |
-| `advisories`         | high     |    ✓    | Versions with a known security advisory (via OSV).                       |
-| `self-integrity`     | critical |    —    | Configuration that attempts to disable Guard's own protections.          |
+| Rule                 | Default  | Network | What it catches                                                                  |
+| -------------------- | -------- | :-----: | -------------------------------------------------------------------------------- |
+| `install-scripts`    | high\*   |    —    | Dependencies that declare install/lifecycle scripts.                             |
+| `integrity`          | medium   |    —    | Registry deps missing or weakly pinned by integrity hash.                        |
+| `git-dep`            | medium   |    —    | Dependencies resolved from git rather than the public registry.                  |
+| `unpinned-ranges`    | low      |    —    | Floating `package.json` ranges (caret, tilde, dist-tag, wildcard).               |
+| `provenance`         | low      |    ✓    | Registry deps with no Sigstore signature or SLSA provenance.\*\*                 |
+| `maintainer`         | medium   |    ✓    | Versions published by a maintainer with no prior history on the package.         |
+| `bundled-deps`       | medium   |    ✓    | Packages that bundle transitive deps inside their own tarball.                   |
+| `manifest-confusion` | medium   |    ✓    | Lockfile and registry disagreement on declared install scripts.                  |
+| `manifest-tampering` | medium   |    ✓    | Tarball package.json install scripts that disagree with the registry.            |
+| `starjacking`        | medium   |    ✓    | Declared `repository.url` does not match the package's identity.                 |
+| `native-binary`      | medium   |    ✓    | Native binaries shipped without `os`/`cpu` declared (ELF, PE, Mach-O detection). |
+| `tarball-anomaly`    | medium   |    ✓    | Extracted tarball is at least 5× the median of the package's recent versions.    |
+| `cooldown`           | medium   |    ✓    | Versions published inside the cooldown window — too new to be vetted.            |
+| `advisories`         | high     |    ✓    | Versions with a known security advisory (via OSV).                               |
+| `self-integrity`     | critical |    —    | Configuration that attempts to disable Guard's own protections.                  |
 
 \* `install-scripts` reports `low` instead of `high` when the project enables
 `ignore-scripts`, since a flagged script will not actually run on install.
