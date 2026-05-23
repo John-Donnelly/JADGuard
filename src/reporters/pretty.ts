@@ -72,6 +72,15 @@ export class PrettyReporter implements Reporter {
     lines.push(this.paint(`  ${this.renderScope(report)}`, ANSI.dim));
     lines.push('');
     lines.push(`  ${this.renderVerdict(verdict)}`);
+    if (report.threatFeed) {
+      lines.push('');
+      lines.push(
+        this.paint(
+          `  threat feed: ${report.threatFeed.generatedAt} · ${report.threatFeed.popularCount} popular packages`,
+          ANSI.dim,
+        ),
+      );
+    }
     lines.push('');
 
     return lines.join('\n');

@@ -84,6 +84,7 @@ export type {
   FetchedTarball,
   ExtractedTarball,
   TarballFetchInput,
+  ThreatFeed,
 } from './integrations/index.js';
 export {
   MemoryCache,
@@ -93,6 +94,7 @@ export {
   ExecGitClient,
   HttpTarballClient,
   readProjectInfo,
+  loadBundledThreatFeed,
 } from './integrations/index.js';
 
 // Reporters ------------------------------------------------------------------
