@@ -25,6 +25,7 @@ export function stubRegistry(
   installScript: Record<string, boolean> = {},
   repository: Record<string, RepositoryInfo> = {},
   nativeFlags: Record<string, { os?: readonly string[]; cpu?: readonly string[] }> = {},
+  priorSizes: Record<string, readonly number[]> = {},
 ): RegistryClient {
   return {
     getPublishTime: async (name, version) => times[`${name}@${version}`],
@@ -34,6 +35,8 @@ export function stubRegistry(
     getRegistryInstallScript: async (name, version) => installScript[`${name}@${version}`],
     getRepositoryInfo: async (name, version) => repository[`${name}@${version}`],
     getNativeFlags: async (name, version) => nativeFlags[`${name}@${version}`],
+    getPriorVersionSizes: async (name, version) =>
+      priorSizes[`${name}@${version}`] ?? [],
   };
 }
 
@@ -58,6 +61,9 @@ export const failingRegistry: RegistryClient = {
     throw new Error('registry unreachable');
   },
   getNativeFlags: async () => {
+    throw new Error('registry unreachable');
+  },
+  getPriorVersionSizes: async () => {
     throw new Error('registry unreachable');
   },
 };

@@ -12,6 +12,7 @@ import { nativeBinaryRule } from './rules/native-binary.js';
 import { provenanceRule } from './rules/provenance.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
 import { starjackingRule } from './rules/starjacking.js';
+import { tarballAnomalyRule } from './rules/tarball-anomaly.js';
 import { unpinnedRangesRule } from './rules/unpinned-ranges.js';
 import type { DependencyGateContext, DependencyRule } from './types.js';
 
@@ -34,6 +35,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'manifest-confusion',
   'starjacking',
   'native-binary',
+  'tarball-anomaly',
 ]);
 
 /**
@@ -53,6 +55,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     manifestConfusionRule,
     starjackingRule,
     nativeBinaryRule,
+    tarballAnomalyRule,
     cooldownRule,
     advisoriesRule,
   ];
