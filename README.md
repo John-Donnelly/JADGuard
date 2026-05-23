@@ -111,11 +111,23 @@ Or in config:
 { "codeGate": { "enabled": true } }
 ```
 
-| Rule            | Default | What it catches                                                                |
-| --------------- | ------- | ------------------------------------------------------------------------------ |
-| `dynamic-exec`  | medium  | `eval(...)`, `new Function(...)`, `vm.runInThisContext(...)` in installed code.|
-| `process-spawn` | medium  | `child_process` import paired with `spawn` / `exec` / `fork` primitives.       |
-| `obfuscation`   | medium  | Long base64/hex literal density, minified bundles carrying encoded payloads.   |
+| Rule              | Default               | What it catches                                                                |
+| ----------------- | --------------------- | ------------------------------------------------------------------------------ |
+| `dynamic-exec`    | medium                | `eval(...)`, `new Function(...)`, `vm.runInThisContext(...)` in installed code.|
+| `process-spawn`   | medium                | `child_process` import paired with `spawn` / `exec` / `fork` primitives.       |
+| `obfuscation`     | medium                | Long base64/hex literal density, minified bundles carrying encoded payloads.   |
+| `secret-access`   | medium                | Reads of NPM_TOKEN / GITHUB_TOKEN / AWS_\* / VAULT_\* or credential paths.     |
+| `network-exfil`   | medium                | Outbound HTTP imports paired with calls (http/https or axios/got/undici/…).    |
+| `ci-tampering`    | medium                | CI workflow paths + fs write, `git push`, or subprocess primitives.            |
+| `code-gate-chain` | **high** / **critical** | ≥2 of the above in the same file (`high`); ≥3 (`critical`). Synthetic, emitted by the chain detector. |
+
+The chain detector groups individual code-gate findings by `(package, file)`
+and emits a synthetic `code-gate-chain` finding whenever ≥2 distinct rules
+fire on the same module — the load-bearing signal of supply-chain credential
+exfiltration, since the full Shai-Hulud kill chain (secret read, subprocess
+spawn, outbound HTTP, workflow write) co-locates inside a single postinstall
+module. Individual rule findings remain at their own severity; the chain
+finding sits on top.
 
 The code gate uses a dependency-free string tokenizer (strings and comments
 blanked before pattern matching) for v0.x. A real AST parser is on the
