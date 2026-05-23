@@ -1,6 +1,6 @@
 export type { Cache } from './cache.js';
 export { MemoryCache, FileCache } from './cache.js';
-export type { RegistryClient, HttpRegistryClientOptions } from './registry.js';
+export type { RegistryClient, DistInfo, HttpRegistryClientOptions } from './registry.js';
 export { HttpRegistryClient } from './registry.js';
 export type {
   OsvClient,

@@ -36,7 +36,7 @@ describe('FileCache', () => {
 });
 
 describe('HttpRegistryClient', () => {
-  it('returns a version publish time and caches the package document', async () => {
+  it('returns a version publish time and caches the packument', async () => {
     let calls = 0;
     const fetchImpl = fakeFetch(() => {
       calls += 1;
@@ -54,6 +54,62 @@ describe('HttpRegistryClient', () => {
     expect(calls).toBe(1); // second lookup served from cache
   });
 
+  it('reports signatures and attestations from the dist block', async () => {
+    const fetchImpl = fakeFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            time: { '1.0.0': '2026-01-01T00:00:00.000Z' },
+            versions: {
+              '1.0.0': {
+                dist: {
+                  signatures: [{ keyid: 'k', sig: 's' }],
+                  attestations: { url: 'https://x' },
+                },
+              },
+              '0.9.0': { dist: {} },
+            },
+          }),
+          { status: 200 },
+        ),
+    );
+    const client = new HttpRegistryClient({
+      registry: 'https://registry.test',
+      cache: new MemoryCache(),
+      fetchImpl,
+    });
+    expect(await client.getDistInfo('pkg', '1.0.0')).toEqual({
+      signatures: 1,
+      hasAttestations: true,
+    });
+    expect(await client.getDistInfo('pkg', '0.9.0')).toEqual({
+      signatures: 0,
+      hasAttestations: false,
+    });
+  });
+
+  it('shares one packument fetch between getPublishTime and getDistInfo', async () => {
+    let calls = 0;
+    const fetchImpl = fakeFetch(() => {
+      calls += 1;
+      return new Response(
+        JSON.stringify({
+          time: { '1.0.0': '2026-01-01T00:00:00.000Z' },
+          versions: { '1.0.0': { dist: { signatures: [{ keyid: 'k', sig: 's' }] } } },
+        }),
+        { status: 200 },
+      );
+    });
+    const client = new HttpRegistryClient({
+      registry: 'https://registry.test',
+      cache: new MemoryCache(),
+      fetchImpl,
+    });
+    await client.getPublishTime('pkg', '1.0.0');
+    await client.getDistInfo('pkg', '1.0.0');
+    expect(calls).toBe(1);
+  });
+
   it('returns undefined for an unknown package', async () => {
     const client = new HttpRegistryClient({
       registry: 'https://registry.test',
@@ -61,6 +117,7 @@ describe('HttpRegistryClient', () => {
       fetchImpl: fakeFetch(() => new Response('', { status: 404 })),
     });
     expect(await client.getPublishTime('ghost', '9.9.9')).toBeUndefined();
+    expect(await client.getDistInfo('ghost', '9.9.9')).toBeUndefined();
   });
 
   it('throws on a server error so the caller can degrade', async () => {

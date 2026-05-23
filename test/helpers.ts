@@ -3,18 +3,25 @@ import type { DependencyGateContext, ResolvedDependency } from '../src/gates/dep
 import type { ParsedLockfile } from '../src/gates/dependency/lockfile/types.js';
 import { MemoryCache } from '../src/integrations/cache.js';
 import type { OsvClient } from '../src/integrations/osv.js';
-import type { RegistryClient } from '../src/integrations/registry.js';
+import type { DistInfo, RegistryClient } from '../src/integrations/registry.js';
 
-/** A registry client that returns canned publish times. */
-export function stubRegistry(times: Record<string, string>): RegistryClient {
+/** A registry client that returns canned publish times and (optionally) dist info. */
+export function stubRegistry(
+  times: Record<string, string>,
+  distInfo: Record<string, DistInfo> = {},
+): RegistryClient {
   return {
     getPublishTime: async (name, version) => times[`${name}@${version}`],
+    getDistInfo: async (name, version) => distInfo[`${name}@${version}`],
   };
 }
 
 /** A registry client that always fails, used to exercise degraded checks. */
 export const failingRegistry: RegistryClient = {
   getPublishTime: async () => {
+    throw new Error('registry unreachable');
+  },
+  getDistInfo: async () => {
     throw new Error('registry unreachable');
   },
 };
