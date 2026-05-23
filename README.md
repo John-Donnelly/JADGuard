@@ -46,7 +46,7 @@ everything.
 | `--fail-on <severity>` | Lowest severity that fails the verdict               |
 | `--cooldown-days <n>`  | Cooldown window for the `cooldown` rule              |
 | `--base <ref>`         | Git ref to diff against for `scan` (default `HEAD`)  |
-| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`) |
+| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`, `provenance`) |
 
 ### Exit codes
 
@@ -56,18 +56,25 @@ everything.
 | `1`  | Failing verdict, or a runtime error |
 | `2`  | Invalid CLI usage                |
 
-## The dependency gate (v0.1)
+## The dependency gate
 
-| Rule              | Default  | What it catches                                                         |
-| ----------------- | -------- | ----------------------------------------------------------------------- |
-| `cooldown`        | medium   | Versions published inside the cooldown window — too new to be vetted.   |
-| `install-scripts` | high\*   | Dependencies that declare install/lifecycle scripts.                    |
-| `integrity`       | medium   | Registry dependencies missing or weakly pinned by integrity hash.       |
-| `advisories`      | high     | Versions with a known security advisory (via OSV).                      |
-| `self-integrity`  | critical | Configuration that attempts to disable Guard's own protections.         |
+| Rule              | Default  | Network | What it catches                                                       |
+| ----------------- | -------- | :-----: | --------------------------------------------------------------------- |
+| `install-scripts` | high\*   |    —    | Dependencies that declare install/lifecycle scripts.                  |
+| `integrity`       | medium   |    —    | Registry deps missing or weakly pinned by integrity hash.             |
+| `git-dep`         | medium   |    —    | Dependencies resolved from git rather than the public registry.       |
+| `unpinned-ranges` | low      |    —    | Floating `package.json` ranges (caret, tilde, dist-tag, wildcard).    |
+| `provenance`      | low      |    ✓    | Registry deps with no Sigstore signature or SLSA provenance.\*\*      |
+| `cooldown`        | medium   |    ✓    | Versions published inside the cooldown window — too new to be vetted. |
+| `advisories`      | high     |    ✓    | Versions with a known security advisory (via OSV).                    |
+| `self-integrity`  | critical |    —    | Configuration that attempts to disable Guard's own protections.       |
 
 \* `install-scripts` reports `low` instead of `high` when the project enables
 `ignore-scripts`, since a flagged script will not actually run on install.
+
+\*\* For `provenance`, absence is the signal — presence is **not** proof. Valid
+SLSA Level 2 provenance has been forged in the wild via credential reuse, so a
+provenance pass is one input among many, not a clean bill of health.
 
 `self-integrity` is **non-suppressible**: it cannot be disabled, downgraded, or
 ignored, and its findings fail the verdict even in `warn` mode. See the
