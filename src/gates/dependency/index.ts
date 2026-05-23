@@ -1,5 +1,6 @@
 import { runRules, type RunnerResult } from '../../engine/runner.js';
 import type { Severity } from '../../engine/severity.js';
+import { codeRuleCatalog } from '../code/index.js';
 import { advisoriesRule } from './rules/advisories.js';
 import { bundledDepsRule } from './rules/bundled-deps.js';
 import { cooldownRule } from './rules/cooldown.js';
@@ -75,6 +76,8 @@ export interface DependencyGateOptions {
   disabledRuleIds?: ReadonlySet<string>;
   /** Per-rule severity overrides from config. */
   severityOverrides?: Record<string, Severity>;
+  /** Append the AST code-gate rule catalog. Off by default in v0.x. */
+  includeCodeGate?: boolean;
 }
 
 /** Runs the dependency gate's rules against a prepared context. */
@@ -82,7 +85,10 @@ export async function runDependencyGate(
   context: DependencyGateContext,
   options: DependencyGateOptions = {},
 ): Promise<RunnerResult> {
-  let rules = dependencyRuleCatalog();
+  let rules: DependencyRule[] = dependencyRuleCatalog();
+  if (options.includeCodeGate) {
+    rules = [...rules, ...codeRuleCatalog()];
+  }
   if (options.offline) {
     rules = rules.filter((rule) => !NETWORK_RULE_IDS.has(rule.id));
   }

@@ -50,6 +50,8 @@ export interface ScanOptions {
   cooldownDays?: number;
   /** Git ref to diff against for `scan` (default `HEAD`). */
   baseRef?: string;
+  /** Force the code gate on for this run, overriding config.codeGate.enabled. */
+  codeGate?: boolean;
 }
 
 export interface ScanResult {
@@ -109,6 +111,7 @@ function applyOverrides(config: GuardConfig, options: ScanOptions): GuardConfig 
   if (options.mode) merged.mode = options.mode;
   if (options.failOn) merged.failOn = options.failOn;
   if (options.cooldownDays !== undefined) merged.cooldownDays = options.cooldownDays;
+  if (options.codeGate !== undefined) merged.codeGate = { enabled: options.codeGate };
   return merged;
 }
 
@@ -258,6 +261,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     offline: options.offline ?? false,
     disabledRuleIds,
     severityOverrides,
+    includeCodeGate: config.codeGate.enabled,
   });
 
   const suppression = applyIgnores(findings, config.ignores, startedAt);
