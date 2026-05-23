@@ -1,6 +1,7 @@
 import { runRules, type RunnerResult } from '../../engine/runner.js';
 import type { Severity } from '../../engine/severity.js';
 import { advisoriesRule } from './rules/advisories.js';
+import { bundledDepsRule } from './rules/bundled-deps.js';
 import { cooldownRule } from './rules/cooldown.js';
 import { gitDepRule } from './rules/git-dep.js';
 import { installScriptsRule } from './rules/install-scripts.js';
@@ -26,6 +27,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'advisories',
   'provenance',
   'maintainer',
+  'bundled-deps',
 ]);
 
 /**
@@ -41,6 +43,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     unpinnedRangesRule,
     provenanceRule,
     maintainerRule,
+    bundledDepsRule,
     cooldownRule,
     advisoriesRule,
   ];
