@@ -1,5 +1,6 @@
 import type { DependencyRule } from '../dependency/types.js';
 import { dynamicExecRule } from './rules/dynamic-exec.js';
+import { processSpawnRule } from './rules/process-spawn.js';
 
 /** A code-gate rule shares the dependency gate's context shape. */
 export type CodeRule = DependencyRule;
@@ -7,7 +8,10 @@ export type CodeRule = DependencyRule;
 export { gatherScannableFiles, type ScannableFile } from './scope.js';
 
 /** Code-gate rule ids — used to extend NETWORK_RULE_IDS for offline mode. */
-export const CODE_RULE_IDS: ReadonlySet<string> = new Set(['dynamic-exec']);
+export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
+  'dynamic-exec',
+  'process-spawn',
+]);
 
 /**
  * Code-gate rules. Off by default in v0.x — `codeGate: { enabled: true }` in
@@ -16,5 +20,5 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set(['dynamic-exec']);
  * Phase 7 adds the behavioural-chain rules and the chain detector.
  */
 export function codeRuleCatalog(): CodeRule[] {
-  return [dynamicExecRule];
+  return [dynamicExecRule, processSpawnRule];
 }
