@@ -83,6 +83,71 @@ describe('integrity rule', () => {
   });
 });
 
+describe('git-dep rule', () => {
+  it('flags a dependency resolved from a git source (npm/yarn style)', async () => {
+    const { gitDepRule } = await import('../src/gates/dependency/rules/git-dep.js');
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({
+          name: 'forked',
+          version: '1.0.0',
+          resolved: 'git+https://github.com/owner/repo.git#abc123',
+          external: true,
+        }),
+      ],
+    });
+    const findings = await gitDepRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+    expect(findings[0]?.data?.source).toContain('github.com/owner/repo');
+  });
+
+  it('flags a github: shorthand (bun / yarn-berry style)', async () => {
+    const { gitDepRule } = await import('../src/gates/dependency/rules/git-dep.js');
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({
+          name: 'forked',
+          version: 'github:owner/repo#abc',
+          resolved: 'github:owner/repo#abc',
+          external: true,
+        }),
+      ],
+    });
+    expect(await gitDepRule.run(ctx)).toHaveLength(1);
+  });
+
+  it('stays quiet for a registry dependency', async () => {
+    const { gitDepRule } = await import('../src/gates/dependency/rules/git-dep.js');
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({
+          name: 'lodash',
+          version: '4.17.21',
+          resolved: 'https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz',
+          integrity: 'sha512-aGVsbG8=',
+        }),
+      ],
+    });
+    expect(await gitDepRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('does not flag a plain file: dependency', async () => {
+    const { gitDepRule } = await import('../src/gates/dependency/rules/git-dep.js');
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({
+          name: 'local',
+          version: '1.0.0',
+          resolved: 'file:../local',
+          external: true,
+        }),
+      ],
+    });
+    expect(await gitDepRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('cooldown rule', () => {
   it('flags a version published inside the cooldown window', async () => {
     const ctx = makeContext({

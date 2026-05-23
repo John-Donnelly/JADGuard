@@ -2,6 +2,7 @@ import { runRules, type RunnerResult } from '../../engine/runner.js';
 import type { Severity } from '../../engine/severity.js';
 import { advisoriesRule } from './rules/advisories.js';
 import { cooldownRule } from './rules/cooldown.js';
+import { gitDepRule } from './rules/git-dep.js';
 import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
@@ -24,7 +25,14 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set(['cooldown', 'advis
  * runs first so configuration tampering surfaces before anything else.
  */
 export function dependencyRuleCatalog(): DependencyRule[] {
-  return [selfIntegrityRule, installScriptsRule, integrityRule, cooldownRule, advisoriesRule];
+  return [
+    selfIntegrityRule,
+    installScriptsRule,
+    integrityRule,
+    gitDepRule,
+    cooldownRule,
+    advisoriesRule,
+  ];
 }
 
 export interface DependencyGateOptions {

@@ -64,6 +64,10 @@ export function parseBunLockfile(content: string, path: string): ParsedLockfile 
         name: split.name,
         version: split.version,
         integrity,
+        // For non-registry sources (git, file, workspace, github:owner/repo,
+        // etc.) the descriptor's tail is the source spec; surface it as
+        // `resolved` so downstream rules can inspect it.
+        resolved: integrity === undefined ? split.version : undefined,
         // A registry package always records an integrity hash; its absence
         // means a git/file/workspace source.
         external: integrity === undefined,
