@@ -23,6 +23,13 @@ export interface ProjectInfo {
    * peer ranges describe compatibility, not what gets installed.
    */
   manifestRanges: Record<string, string>;
+  /**
+   * Map of scope (without the leading `@`) → declared registry URL, read from
+   * `.npmrc` lines like `@scope:registry=https://internal.example.com/`. Used
+   * by the `dependency-confusion` rule to detect deps that should have come
+   * from an internal registry but resolved from the public one.
+   */
+  internalScopes: Record<string, string>;
 }
 
 async function readTextIfExists(path: string): Promise<string | undefined> {
@@ -59,6 +66,22 @@ function readManifestRanges(pkg: Record<string, unknown>): Record<string, string
   return out;
 }
 
+/**
+ * Reads `@scope:registry=URL` lines from `.npmrc`. These declare a scope as
+ * coming from a non-default (typically internal) registry — exactly the
+ * configuration dependency-confusion attacks try to subvert.
+ */
+function readInternalScopes(npmrc: string | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!npmrc) return out;
+  const pattern = /^\s*@([\w.-]+):registry\s*=\s*(\S+)\s*$/gm;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(npmrc)) !== null) {
+    out[match[1]!.toLowerCase()] = match[2]!;
+  }
+  return out;
+}
+
 /** Detects whether the project disables lifecycle scripts. */
 function detectIgnoreScripts(npmrc: string | undefined, yarnrc: string | undefined): boolean {
   if (npmrc && /^\s*ignore-scripts\s*=\s*true\s*$/im.test(npmrc)) return true;
@@ -79,6 +102,7 @@ export async function readProjectInfo(dir: string): Promise<ProjectInfo> {
     root: dir,
     ignoreScripts: detectIgnoreScripts(npmrc, yarnrc),
     manifestRanges: {},
+    internalScopes: readInternalScopes(npmrc),
   };
 
   if (pkgRaw) {

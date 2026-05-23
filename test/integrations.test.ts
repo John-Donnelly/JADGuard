@@ -277,6 +277,25 @@ describe('readProjectInfo', () => {
     expect(info.ignoreScripts).toBe(true);
   });
 
+  it('parses internal-scope registry declarations out of .npmrc', async () => {
+    const dir = await tmp('jadguard-proj-');
+    await writeFile(join(dir, 'package.json'), JSON.stringify({ name: 'demo' }));
+    await writeFile(
+      join(dir, '.npmrc'),
+      [
+        'registry=https://registry.npmjs.org/',
+        '@company:registry=https://npm.internal.example.com/',
+        '@other-team:registry=https://artifactory.example.com/api/npm/',
+        '',
+      ].join('\n'),
+    );
+    const info = await readProjectInfo(dir);
+    expect(info.internalScopes).toEqual({
+      company: 'https://npm.internal.example.com/',
+      'other-team': 'https://artifactory.example.com/api/npm/',
+    });
+  });
+
   it('defaults ignore-scripts to false when nothing enforces it', async () => {
     const dir = await tmp('jadguard-proj-');
     await writeFile(join(dir, 'package.json'), JSON.stringify({ name: 'plain' }));

@@ -34,7 +34,13 @@ function makeReport(): Report {
   return {
     verdict,
     scanType: 'audit',
-    project: { root: '/project', name: 'demo', ignoreScripts: true, manifestRanges: {} },
+    project: {
+      root: '/project',
+      name: 'demo',
+      ignoreScripts: true,
+      manifestRanges: {},
+      internalScopes: {},
+    },
     lockfileKind: 'npm',
     lockfilePath: 'package-lock.json',
     guardVersion: '0.1.0',
