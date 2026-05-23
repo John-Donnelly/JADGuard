@@ -78,6 +78,11 @@ export type {
   OsvClient,
   GitClient,
   ProjectInfo,
+  TarballClient,
+  TarballFile,
+  FetchedTarball,
+  ExtractedTarball,
+  TarballFetchInput,
 } from './integrations/index.js';
 export {
   MemoryCache,
@@ -85,6 +90,7 @@ export {
   HttpRegistryClient,
   HttpOsvClient,
   ExecGitClient,
+  HttpTarballClient,
   readProjectInfo,
 } from './integrations/index.js';
 
@@ -106,4 +112,4 @@ export type { PreconditionRuleInfo } from './preconditions.js';
 
 // Meta -----------------------------------------------------------------------
 export { guardVersion } from './util/version.js';
-export { GuardError, UsageError, ConfigError, LockfileError } from './util/errors.js';
+export { GuardError, UsageError, ConfigError, LockfileError, TarballError } from './util/errors.js';
