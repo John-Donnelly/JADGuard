@@ -1,4 +1,5 @@
 import type { DependencyRule } from '../dependency/types.js';
+import { ciTamperingRule } from './rules/ci-tampering.js';
 import { dynamicExecRule } from './rules/dynamic-exec.js';
 import { networkExfilRule } from './rules/network-exfil.js';
 import { obfuscationRule } from './rules/obfuscation.js';
@@ -17,6 +18,7 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
   'obfuscation',
   'secret-access',
   'network-exfil',
+  'ci-tampering',
 ]);
 
 /**
@@ -33,5 +35,6 @@ export function codeRuleCatalog(): CodeRule[] {
     obfuscationRule,
     secretAccessRule,
     networkExfilRule,
+    ciTamperingRule,
   ];
 }

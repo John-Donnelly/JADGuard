@@ -1783,6 +1783,93 @@ describe('network-exfil rule (code gate)', () => {
   });
 });
 
+describe('ci-tampering rule (code gate)', () => {
+  const codeDep = makeDep({
+    name: 'persistor',
+    version: '1.0.0',
+    resolved: 'https://registry.test/persistor.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  it('flags a Shai-Hulud-style .github/workflows/ write', async () => {
+    const { ciTamperingRule } = await import(
+      '../src/gates/code/rules/ci-tampering.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'persistor@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "const fs = require('fs');",
+                "fs.writeFileSync('.github/workflows/discussion.yaml', payload);",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    const findings = await ciTamperingRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+  });
+
+  it('flags a git push command paired with a workflow path', async () => {
+    const { ciTamperingRule } = await import(
+      '../src/gates/code/rules/ci-tampering.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'persistor@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "const cp = require('child_process');",
+                "cp.exec('git add .github/workflows/discussion.yaml && git push origin main');",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await ciTamperingRule.run(ctx)).toHaveLength(1);
+  });
+
+  it('does not flag a workflow path mention without write/push primitives', async () => {
+    const { ciTamperingRule } = await import(
+      '../src/gates/code/rules/ci-tampering.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'persistor@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content:
+                "module.exports = { docs: 'See .github/workflows/ci.yml for our CI pipeline.' };",
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await ciTamperingRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
