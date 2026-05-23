@@ -110,6 +110,43 @@ describe('HttpRegistryClient', () => {
     expect(calls).toBe(1);
   });
 
+  it("flags a new publisher on a version after the package's history", async () => {
+    const packument = {
+      time: {
+        created: '2023-01-01T00:00:00.000Z',
+        '1.0.0': '2023-01-01T00:00:00.000Z',
+        '1.1.0': '2023-06-01T00:00:00.000Z',
+        '2.0.0': '2024-01-01T00:00:00.000Z',
+        modified: '2024-01-01T00:00:00.000Z',
+      },
+      versions: {
+        '1.0.0': { _npmUser: { name: 'alice' }, dist: {} },
+        '1.1.0': { _npmUser: { name: 'alice' }, dist: {} },
+        '2.0.0': { _npmUser: { name: 'attacker' }, dist: {} },
+      },
+    };
+    const client = new HttpRegistryClient({
+      registry: 'https://registry.test',
+      cache: new MemoryCache(),
+      fetchImpl: fakeFetch(() => new Response(JSON.stringify(packument), { status: 200 })),
+    });
+    expect(await client.getMaintainerInfo('pkg', '1.0.0')).toEqual({
+      publisher: 'alice',
+      isFirstVersion: true,
+      isNewPublisher: false,
+    });
+    expect(await client.getMaintainerInfo('pkg', '1.1.0')).toEqual({
+      publisher: 'alice',
+      isFirstVersion: false,
+      isNewPublisher: false,
+    });
+    expect(await client.getMaintainerInfo('pkg', '2.0.0')).toEqual({
+      publisher: 'attacker',
+      isFirstVersion: false,
+      isNewPublisher: true,
+    });
+  });
+
   it('returns undefined for an unknown package', async () => {
     const client = new HttpRegistryClient({
       registry: 'https://registry.test',

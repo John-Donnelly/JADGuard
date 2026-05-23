@@ -323,6 +323,105 @@ describe('provenance rule', () => {
   });
 });
 
+describe('maintainer rule', () => {
+  it('flags a version published by an account with no prior publishes on the package', async () => {
+    const { maintainerRule } = await import(
+      '../src/gates/dependency/rules/maintainer.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'taken-over', version: '2.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {
+            'taken-over@2.0.0': {
+              publisher: 'attacker',
+              isFirstVersion: false,
+              isNewPublisher: true,
+            },
+          },
+        ),
+      },
+    });
+    const findings = await maintainerRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+    expect(findings[0]?.data?.publisher).toBe('attacker');
+  });
+
+  it('does not flag a known publisher', async () => {
+    const { maintainerRule } = await import(
+      '../src/gates/dependency/rules/maintainer.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'stable', version: '1.5.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {
+            'stable@1.5.0': {
+              publisher: 'maintainer',
+              isFirstVersion: false,
+              isNewPublisher: false,
+            },
+          },
+        ),
+      },
+    });
+    expect(await maintainerRule.run(ctx)).toHaveLength(0);
+  });
+
+  it("does not flag the package's very first version", async () => {
+    const { maintainerRule } = await import(
+      '../src/gates/dependency/rules/maintainer.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'fresh', version: '0.1.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {
+            'fresh@0.1.0': {
+              publisher: 'author',
+              isFirstVersion: true,
+              isNewPublisher: true,
+            },
+          },
+        ),
+      },
+    });
+    expect(await maintainerRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('stays silent when the publisher cannot be determined', async () => {
+    const { maintainerRule } = await import(
+      '../src/gates/dependency/rules/maintainer.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'ancient', version: '0.0.1' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          { 'ancient@0.0.1': { isFirstVersion: false, isNewPublisher: false } },
+        ),
+      },
+    });
+    expect(await maintainerRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
