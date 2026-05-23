@@ -1,5 +1,6 @@
 import type { DependencyRule } from '../dependency/types.js';
 import { dynamicExecRule } from './rules/dynamic-exec.js';
+import { networkExfilRule } from './rules/network-exfil.js';
 import { obfuscationRule } from './rules/obfuscation.js';
 import { processSpawnRule } from './rules/process-spawn.js';
 import { secretAccessRule } from './rules/secret-access.js';
@@ -15,6 +16,7 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
   'process-spawn',
   'obfuscation',
   'secret-access',
+  'network-exfil',
 ]);
 
 /**
@@ -25,5 +27,11 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
  * that elevates severity when ≥2 indicators co-occur in the same file.
  */
 export function codeRuleCatalog(): CodeRule[] {
-  return [dynamicExecRule, processSpawnRule, obfuscationRule, secretAccessRule];
+  return [
+    dynamicExecRule,
+    processSpawnRule,
+    obfuscationRule,
+    secretAccessRule,
+    networkExfilRule,
+  ];
 }

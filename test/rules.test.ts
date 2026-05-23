@@ -1676,6 +1676,113 @@ describe('secret-access rule (code gate)', () => {
   });
 });
 
+describe('network-exfil rule (code gate)', () => {
+  const codeDep = makeDep({
+    name: 'http-using',
+    version: '1.0.0',
+    resolved: 'https://registry.test/http-using.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  it('flags node:https import + .request call', async () => {
+    const { networkExfilRule } = await import(
+      '../src/gates/code/rules/network-exfil.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'http-using@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "const https = require('node:https');",
+                "https.request('https://example.com', () => {});",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect((await networkExfilRule.run(ctx))).toHaveLength(1);
+  });
+
+  it('flags axios import + axios call', async () => {
+    const { networkExfilRule } = await import(
+      '../src/gates/code/rules/network-exfil.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'http-using@1.0.0': buildExtracted([
+            {
+              path: 'client.js',
+              content: [
+                "import axios from 'axios';",
+                "axios.get('https://api.example.com');",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect((await networkExfilRule.run(ctx))).toHaveLength(1);
+  });
+
+  it('does not flag http import without a call', async () => {
+    const { networkExfilRule } = await import(
+      '../src/gates/code/rules/network-exfil.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'http-using@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: "module.exports = require('node:https');",
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await networkExfilRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('does not flag pure-utility code', async () => {
+    const { networkExfilRule } = await import(
+      '../src/gates/code/rules/network-exfil.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'http-using@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: 'module.exports = (a, b) => a + b;',
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await networkExfilRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
