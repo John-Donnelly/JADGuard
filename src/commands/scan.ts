@@ -26,6 +26,7 @@ import { ExecGitClient } from '../integrations/git.js';
 import { HttpOsvClient } from '../integrations/osv.js';
 import { readProjectInfo, type ProjectInfo } from '../integrations/package-manager.js';
 import { HttpRegistryClient } from '../integrations/registry.js';
+import { HttpTarballClient } from '../integrations/tarball.js';
 import { NO_LOCKFILE_RULE, noLockfileFinding } from '../preconditions.js';
 import type { Report } from '../reporters/types.js';
 import { LockfileError } from '../util/errors.js';
@@ -231,6 +232,15 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
       cache,
       registry: new HttpRegistryClient({ registry: config.registry, cache }),
       osv: new HttpOsvClient(),
+      // The tarball pipeline writes its own content-addressed disk cache and
+      // makes outbound HTTP, so it is off in `--offline` mode.
+      ...(options.offline
+        ? {}
+        : {
+            tarballs: new HttpTarballClient({
+              cacheDir: `${dir}/.jadguard-cache/tarballs`,
+            }),
+          }),
     },
   };
 
