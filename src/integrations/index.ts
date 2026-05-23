@@ -16,5 +16,14 @@ export type {
 export { HttpOsvClient } from './osv.js';
 export type { GitClient } from './git.js';
 export { ExecGitClient } from './git.js';
+export type {
+  TarballClient,
+  TarballFile,
+  FetchedTarball,
+  ExtractedTarball,
+  TarballFetchInput,
+  HttpTarballClientOptions,
+} from './tarball.js';
+export { HttpTarballClient } from './tarball.js';
 export type { ProjectInfo } from './package-manager.js';
 export { readProjectInfo } from './package-manager.js';

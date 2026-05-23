@@ -18,3 +18,6 @@ export class ConfigError extends GuardError {}
 
 /** A lockfile is missing, ambiguous, or could not be parsed. */
 export class LockfileError extends GuardError {}
+
+/** A registry tarball could not be fetched, verified, or safely extracted. */
+export class TarballError extends GuardError {}
