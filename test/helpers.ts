@@ -15,6 +15,7 @@ import type {
   TarballClient,
   TarballFile,
 } from '../src/integrations/tarball.js';
+import type { ThreatFeed } from '../src/integrations/threat-feed.js';
 
 /** A registry client that returns canned packument-derived data. */
 export function stubRegistry(
@@ -100,6 +101,16 @@ export function buildExtracted(
     files.set(e.path, file);
   }
   return { files, rejected: [] };
+}
+
+/** A `ThreatFeed` populated from a hand-supplied popular-name list. */
+export function stubThreatFeed(popularNames: readonly string[]): ThreatFeed {
+  return {
+    popularPackages: new Set(popularNames.map((n) => n.toLowerCase())),
+    generatedAt: '2026-05-23',
+    popularCount: popularNames.length,
+    source: 'test stub',
+  };
 }
 
 /** A TarballClient that returns canned extracted tarballs keyed by `name@version`. */

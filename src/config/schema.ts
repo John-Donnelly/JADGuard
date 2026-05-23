@@ -26,6 +26,11 @@ export interface GuardConfig {
   cooldownDays: number;
   /** Registry base URL used by the `cooldown` rule. */
   registry: string;
+  /**
+   * Opt-in flags for experimental rules that have not yet cleared the
+   * false-positive corpus. Off by default; users opt in per rule id.
+   */
+  experimental: Record<string, boolean>;
 }
 
 export const DEFAULT_CONFIG: GuardConfig = {
@@ -36,6 +41,7 @@ export const DEFAULT_CONFIG: GuardConfig = {
   ignores: [],
   cooldownDays: 14,
   registry: 'https://registry.npmjs.org',
+  experimental: {},
 };
 
 function fail(source: string, message: string): never {
@@ -105,7 +111,12 @@ function parseIgnore(value: unknown, source: string, index: number): IgnoreRule 
  */
 export function parseConfig(raw: unknown, source: string): GuardConfig {
   const obj = asObject(raw, source, 'config');
-  const config: GuardConfig = { ...DEFAULT_CONFIG, rules: {}, ignores: [] };
+  const config: GuardConfig = {
+    ...DEFAULT_CONFIG,
+    rules: {},
+    ignores: [],
+    experimental: {},
+  };
 
   if (obj.mode !== undefined) {
     const mode = asString(obj.mode, source, 'mode');
@@ -145,6 +156,15 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
   if (obj.ignores !== undefined) {
     if (!Array.isArray(obj.ignores)) fail(source, 'ignores must be an array');
     config.ignores = obj.ignores.map((value, index) => parseIgnore(value, source, index));
+  }
+  if (obj.experimental !== undefined) {
+    const experimental = asObject(obj.experimental, source, 'experimental');
+    for (const [key, value] of Object.entries(experimental)) {
+      if (typeof value !== 'boolean') {
+        fail(source, `experimental.${key} must be a boolean`);
+      }
+      config.experimental[key] = value;
+    }
   }
 
   return config;
