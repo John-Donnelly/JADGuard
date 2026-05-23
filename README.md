@@ -27,14 +27,26 @@ Requires Node.js >= 20.
 ## Usage
 
 ```sh
-jadguard init      # write a starter jadguard.config.json
-jadguard scan      # gate dependencies that changed vs the git baseline
-jadguard audit     # gate the entire resolved dependency tree
+jadguard init                # write a starter jadguard.config.json
+jadguard scan                # gate dependencies that changed vs the git baseline
+jadguard audit               # gate the entire resolved dependency tree
+jadguard verify-signatures   # run only the provenance rule (signature-or-fail)
+jadguard allow esbuild       # add esbuild to the install allowlist
+jadguard install             # install with --ignore-scripts; run scripts only for allowlisted packages
 ```
 
 `scan` is the fast pull-request check — it diffs the lockfile against git and
 evaluates only newly added or version-bumped dependencies. `audit` evaluates
 everything.
+
+`verify-signatures` is the focused command for orgs that want
+provenance-or-fail in CI without the rest of Guard's surface — runs only the
+`provenance` rule.
+
+`install` runs the project's package manager with `--ignore-scripts`, then
+re-runs `install`/`postinstall` lifecycle scripts **only** for packages
+named in `allow.json` (managed via `jadguard allow`). Every other package's
+install scripts stay blocked.
 
 ### Common options
 
