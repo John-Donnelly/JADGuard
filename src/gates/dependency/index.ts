@@ -5,6 +5,7 @@ import { cooldownRule } from './rules/cooldown.js';
 import { gitDepRule } from './rules/git-dep.js';
 import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
+import { provenanceRule } from './rules/provenance.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
 import { unpinnedRangesRule } from './rules/unpinned-ranges.js';
 import type { DependencyGateContext, DependencyRule } from './types.js';
@@ -19,7 +20,11 @@ export type {
 export { NON_SUPPRESSIBLE_RULE_IDS } from './rules/self-integrity.js';
 
 /** Rule ids that require network access (registry / OSV). */
-export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set(['cooldown', 'advisories']);
+export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
+  'cooldown',
+  'advisories',
+  'provenance',
+]);
 
 /**
  * The full dependency-gate rule catalog, in report order. `self-integrity`
@@ -32,6 +37,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     integrityRule,
     gitDepRule,
     unpinnedRangesRule,
+    provenanceRule,
     cooldownRule,
     advisoriesRule,
   ];
