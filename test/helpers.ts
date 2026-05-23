@@ -9,6 +9,12 @@ import type {
   RegistryClient,
   RepositoryInfo,
 } from '../src/integrations/registry.js';
+import type {
+  ExtractedTarball,
+  FetchedTarball,
+  TarballClient,
+  TarballFile,
+} from '../src/integrations/tarball.js';
 
 /** A registry client that returns canned packument-derived data. */
 export function stubRegistry(
@@ -18,6 +24,7 @@ export function stubRegistry(
   bundled: Record<string, readonly string[]> = {},
   installScript: Record<string, boolean> = {},
   repository: Record<string, RepositoryInfo> = {},
+  nativeFlags: Record<string, { os?: readonly string[]; cpu?: readonly string[] }> = {},
 ): RegistryClient {
   return {
     getPublishTime: async (name, version) => times[`${name}@${version}`],
@@ -26,6 +33,7 @@ export function stubRegistry(
     getBundleDependencies: async (name, version) => bundled[`${name}@${version}`] ?? [],
     getRegistryInstallScript: async (name, version) => installScript[`${name}@${version}`],
     getRepositoryInfo: async (name, version) => repository[`${name}@${version}`],
+    getNativeFlags: async (name, version) => nativeFlags[`${name}@${version}`],
   };
 }
 
@@ -49,7 +57,63 @@ export const failingRegistry: RegistryClient = {
   getRepositoryInfo: async () => {
     throw new Error('registry unreachable');
   },
+  getNativeFlags: async () => {
+    throw new Error('registry unreachable');
+  },
 };
+
+/** Builds an in-memory `ExtractedTarball` for rule tests. */
+export function buildExtracted(
+  entries: Array<{
+    path: string;
+    content?: string | Buffer;
+    mode?: number;
+    type?: 'file' | 'directory';
+  }>,
+): ExtractedTarball {
+  const files = new Map<string, TarballFile>();
+  for (const e of entries) {
+    const content =
+      e.content === undefined
+        ? undefined
+        : Buffer.isBuffer(e.content)
+          ? e.content
+          : Buffer.from(e.content, 'utf8');
+    const file: TarballFile = {
+      path: e.path,
+      size: e.content !== undefined ? (content?.length ?? 0) : 0,
+      mode: e.mode ?? 0o644,
+      type: e.type ?? 'file',
+    };
+    if (content) file.content = content;
+    files.set(e.path, file);
+  }
+  return { files, rejected: [] };
+}
+
+/** A TarballClient that returns canned extracted tarballs keyed by `name@version`. */
+export function stubTarballs(
+  byKey: Record<string, ExtractedTarball>,
+): TarballClient {
+  return {
+    fetch: async (dep) => {
+      const key = `${dep.name}@${dep.version}`;
+      if (!byKey[key]) return undefined;
+      const fetched: FetchedTarball = {
+        path: `mock:${key}`,
+        integrity: dep.integrity ?? 'sha512-mock',
+        size: 0,
+      };
+      return fetched;
+    },
+    extract: async (tarball) => {
+      const key = tarball.path.replace(/^mock:/, '');
+      const result = byKey[key];
+      if (!result) throw new Error(`no stub tarball for ${key}`);
+      return result;
+    },
+  };
+}
 
 /** An OSV client that returns canned advisory matches. */
 export function stubOsv(matches: Record<string, string[]>): OsvClient {

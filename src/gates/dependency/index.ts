@@ -8,6 +8,7 @@ import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
 import { maintainerRule } from './rules/maintainer.js';
 import { manifestConfusionRule } from './rules/manifest-confusion.js';
+import { nativeBinaryRule } from './rules/native-binary.js';
 import { provenanceRule } from './rules/provenance.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
 import { starjackingRule } from './rules/starjacking.js';
@@ -32,6 +33,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'bundled-deps',
   'manifest-confusion',
   'starjacking',
+  'native-binary',
 ]);
 
 /**
@@ -50,6 +52,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     bundledDepsRule,
     manifestConfusionRule,
     starjackingRule,
+    nativeBinaryRule,
     cooldownRule,
     advisoriesRule,
   ];
