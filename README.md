@@ -46,7 +46,8 @@ everything.
 | `--fail-on <severity>` | Lowest severity that fails the verdict               |
 | `--cooldown-days <n>`  | Cooldown window for the `cooldown` rule              |
 | `--base <ref>`         | Git ref to diff against for `scan` (default `HEAD`)  |
-| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`, `provenance`, `maintainer`, `bundled-deps`, `manifest-confusion`, `manifest-tampering`, `starjacking`, `native-binary`, `tarball-anomaly`) |
+| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`, `provenance`, `maintainer`, `bundled-deps`, `manifest-confusion`, `manifest-tampering`, `starjacking`, `native-binary`, `tarball-anomaly`, and the code-gate rules) |
+| `--code`               | Enable the AST code-gate rules (off by default in v0.x)               |
 
 ### Exit codes
 
@@ -91,6 +92,34 @@ it clears the production false-positive corpus. Enable it explicitly:
 ```json
 { "experimental": { "typosquat": true } }
 ```
+
+## The code gate (opt-in)
+
+The code gate fetches each in-scope dependency's tarball, safe-extracts it,
+and scans the installed JS/MJS/CJS source for the behavioural shapes documented
+in the threat-research grounding. It is **off by default in v0.x** because the
+false-positive corpus has not yet cleared the strategy's bar; enable it
+explicitly:
+
+```sh
+jadguard audit --code
+```
+
+Or in config:
+
+```json
+{ "codeGate": { "enabled": true } }
+```
+
+| Rule            | Default | What it catches                                                                |
+| --------------- | ------- | ------------------------------------------------------------------------------ |
+| `dynamic-exec`  | medium  | `eval(...)`, `new Function(...)`, `vm.runInThisContext(...)` in installed code.|
+| `process-spawn` | medium  | `child_process` import paired with `spawn` / `exec` / `fork` primitives.       |
+| `obfuscation`   | medium  | Long base64/hex literal density, minified bundles carrying encoded payloads.   |
+
+The code gate uses a dependency-free string tokenizer (strings and comments
+blanked before pattern matching) for v0.x. A real AST parser is on the
+roadmap if false-positive discipline calls for higher fidelity.
 
 `self-integrity` is **non-suppressible**: it cannot be disabled, downgraded, or
 ignored, and its findings fail the verdict even in `warn` mode. See the
