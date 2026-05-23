@@ -15,6 +15,7 @@ import { provenanceRule } from './rules/provenance.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
 import { starjackingRule } from './rules/starjacking.js';
 import { tarballAnomalyRule } from './rules/tarball-anomaly.js';
+import { typosquatRule } from './rules/typosquat.js';
 import { unpinnedRangesRule } from './rules/unpinned-ranges.js';
 import type { DependencyGateContext, DependencyRule } from './types.js';
 
@@ -53,6 +54,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     gitDepRule,
     unpinnedRangesRule,
     dependencyConfusionRule,
+    typosquatRule,
     provenanceRule,
     maintainerRule,
     bundledDepsRule,

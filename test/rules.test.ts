@@ -14,6 +14,7 @@ import {
   stubOsv,
   stubRegistry,
   stubTarballs,
+  stubThreatFeed,
 } from './helpers.js';
 
 function lockfile(overrides: Partial<ParsedLockfile>): ParsedLockfile {
@@ -1079,6 +1080,115 @@ describe('dependency-confusion rule', () => {
       ],
     });
     expect(await dependencyConfusionRule.run(ctx)).toHaveLength(0);
+  });
+});
+
+describe('typosquat rule (experimental)', () => {
+  it.each([
+    ['react', 'react', 0],
+    ['react', 'reactt', 1],
+    ['react', 'raect', 1], // transposition
+    ['react', 'reactz', 1],
+    ['react', 'reacthsa', 3], // out of bounds — returns maxDistance + 1
+    ['react', 'react-dom', 3], // length diff > 2
+  ])('Damerau-Levenshtein(%s, %s) returns the expected bound', async (a, b, expected) => {
+    const { boundedDamerauLevenshtein } = await import(
+      '../src/gates/dependency/rules/typosquat.js'
+    );
+    if (expected <= 2) {
+      expect(boundedDamerauLevenshtein(a, b, 2)).toBe(expected);
+    } else {
+      expect(boundedDamerauLevenshtein(a, b, 2)).toBeGreaterThan(2);
+    }
+  });
+
+  it('is silent when the experimental flag is not set', async () => {
+    const { typosquatRule } = await import(
+      '../src/gates/dependency/rules/typosquat.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'raect', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        threatFeed: stubThreatFeed(['react', 'lodash']),
+      },
+    });
+    expect(await typosquatRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('flags a name within edit distance 2 of a popular package', async () => {
+    const { typosquatRule } = await import(
+      '../src/gates/dependency/rules/typosquat.js'
+    );
+    const ctx = makeContext({
+      config: { ...makeContext().config, experimental: { typosquat: true } },
+      dependencies: [makeDep({ name: 'raect', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        threatFeed: stubThreatFeed(['react', 'lodash']),
+      },
+    });
+    const findings = await typosquatRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.data?.nearestPopular).toBe('react');
+    expect(findings[0]?.data?.editDistance).toBe(1);
+  });
+
+  it('does not flag an exact match to a popular name', async () => {
+    const { typosquatRule } = await import(
+      '../src/gates/dependency/rules/typosquat.js'
+    );
+    const ctx = makeContext({
+      config: { ...makeContext().config, experimental: { typosquat: true } },
+      dependencies: [makeDep({ name: 'react', version: '18.3.1' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        threatFeed: stubThreatFeed(['react', 'lodash']),
+      },
+    });
+    expect(await typosquatRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('does not flag a name well outside edit-distance 2', async () => {
+    const { typosquatRule } = await import(
+      '../src/gates/dependency/rules/typosquat.js'
+    );
+    const ctx = makeContext({
+      config: { ...makeContext().config, experimental: { typosquat: true } },
+      dependencies: [makeDep({ name: 'somethingdistant', version: '1.0.0' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        threatFeed: stubThreatFeed(['react', 'lodash']),
+      },
+    });
+    expect(await typosquatRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('skips dependencies that have not changed', async () => {
+    const { typosquatRule } = await import(
+      '../src/gates/dependency/rules/typosquat.js'
+    );
+    const ctx = makeContext({
+      config: { ...makeContext().config, experimental: { typosquat: true } },
+      dependencies: [
+        makeDep({ name: 'raect', version: '1.0.0', changed: false }),
+      ],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        threatFeed: stubThreatFeed(['react', 'lodash']),
+      },
+    });
+    expect(await typosquatRule.run(ctx)).toHaveLength(0);
   });
 });
 
