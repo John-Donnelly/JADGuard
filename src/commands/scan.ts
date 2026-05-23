@@ -1,5 +1,4 @@
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
 import { basename, join, relative } from 'node:path';
 import { loadConfig } from '../config/load.js';
 import type { GuardConfig } from '../config/schema.js';
@@ -30,7 +29,6 @@ import { HttpRegistryClient } from '../integrations/registry.js';
 import { NO_LOCKFILE_RULE, noLockfileFinding } from '../preconditions.js';
 import type { Report } from '../reporters/types.js';
 import { LockfileError } from '../util/errors.js';
-import { stripBom } from '../util/text.js';
 import { guardVersion } from '../util/version.js';
 
 export interface ScanOptions {
@@ -110,22 +108,6 @@ function applyOverrides(config: GuardConfig, options: ScanOptions): GuardConfig 
   if (options.failOn) merged.failOn = options.failOn;
   if (options.cooldownDays !== undefined) merged.cooldownDays = options.cooldownDays;
   return merged;
-}
-
-/** True when package.json declares at least one dependency of any kind. */
-async function hasDeclaredDependencies(dir: string): Promise<boolean> {
-  let pkg: Record<string, unknown>;
-  try {
-    const raw = await readFile(join(dir, 'package.json'), 'utf8');
-    pkg = JSON.parse(stripBom(raw)) as Record<string, unknown>;
-  } catch {
-    return false;
-  }
-  for (const field of ['dependencies', 'devDependencies', 'optionalDependencies'] as const) {
-    const deps = pkg[field];
-    if (deps && typeof deps === 'object' && Object.keys(deps).length > 0) return true;
-  }
-  return false;
 }
 
 /**
@@ -208,7 +190,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
       config,
       scanType,
       startedAt,
-      declaresDependencies: await hasDeclaredDependencies(dir),
+      declaresDependencies: Object.keys(project.manifestRanges).length > 0,
     });
   }
 

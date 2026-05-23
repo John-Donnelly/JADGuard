@@ -55,7 +55,7 @@ export function makeContext(
   const dependencies = overrides.dependencies ?? [];
   return {
     scanType: 'audit',
-    project: { root: '/project', ignoreScripts: false },
+    project: { root: '/project', ignoreScripts: false, manifestRanges: {} },
     lockfile: EMPTY_LOCKFILE,
     config: { ...DEFAULT_CONFIG, rules: {}, ignores: [] },
     dependencies,

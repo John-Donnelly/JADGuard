@@ -120,4 +120,26 @@ describe('readProjectInfo', () => {
     const info = await readProjectInfo(dir);
     expect(info.ignoreScripts).toBe(false);
   });
+
+  it('merges declared ranges from dependencies, devDependencies, and optionalDependencies', async () => {
+    const dir = await tmp('jadguard-proj-');
+    await writeFile(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'demo',
+        dependencies: { lodash: '^4.17.21' },
+        devDependencies: { vitest: '~3.0.0' },
+        optionalDependencies: { fsevents: '2.3.3' },
+        peerDependencies: { react: '^18.0.0' },
+      }),
+    );
+    const info = await readProjectInfo(dir);
+    expect(info.manifestRanges).toEqual({
+      lodash: '^4.17.21',
+      vitest: '~3.0.0',
+      fsevents: '2.3.3',
+    });
+    // peerDependencies are deliberately not included.
+    expect(info.manifestRanges).not.toHaveProperty('react');
+  });
 });

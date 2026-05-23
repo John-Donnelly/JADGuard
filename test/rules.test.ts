@@ -21,7 +21,7 @@ function lockfile(overrides: Partial<ParsedLockfile>): ParsedLockfile {
 describe('install-scripts rule', () => {
   it('flags an install script as high risk when scripts are not ignored', async () => {
     const ctx = makeContext({
-      project: { root: '/p', ignoreScripts: false },
+      project: { root: '/p', ignoreScripts: false, manifestRanges: {} },
       dependencies: [makeDep({ name: 'evil', version: '1.0.0', hasInstallScript: true })],
     });
     const findings = await installScriptsRule.run(ctx);
@@ -31,7 +31,7 @@ describe('install-scripts rule', () => {
 
   it('downgrades to low when the project ignores scripts', async () => {
     const ctx = makeContext({
-      project: { root: '/p', ignoreScripts: true },
+      project: { root: '/p', ignoreScripts: true, manifestRanges: {} },
       dependencies: [makeDep({ name: 'evil', version: '1.0.0', hasInstallScript: true })],
     });
     const findings = await installScriptsRule.run(ctx);
@@ -145,6 +145,64 @@ describe('git-dep rule', () => {
       ],
     });
     expect(await gitDepRule.run(ctx)).toHaveLength(0);
+  });
+});
+
+describe('unpinned-ranges rule', () => {
+  it.each([
+    ['^4.17.21', true, 'caret'],
+    ['~4.17.21', true, 'tilde'],
+    ['*', true, 'wildcard'],
+    ['latest', true, 'dist-tag'],
+    ['>=1.0.0', true, 'comparator'],
+    ['1.0.0 || 2.0.0', true, 'multi-range'],
+    ['1.0.0 - 2.0.0', true, 'hyphen'],
+    ['1.x', true, 'wildcard segment'],
+    ['4.17.21', false, 'exact'],
+    ['=4.17.21', false, 'exact-eq'],
+    ['workspace:^1.0.0', false, 'workspace protocol'],
+    ['file:../local', false, 'file protocol'],
+    ['git+https://x/y.git#abc', false, 'git protocol (handled by git-dep)'],
+  ])('classifies "%s" correctly (%s)', async (range, expectedFloating) => {
+    const { classifyRange } = await import('../src/gates/dependency/rules/unpinned-ranges.js');
+    expect(classifyRange(range).floating).toBe(expectedFloating);
+  });
+
+  it('flags every floating range present in package.json', async () => {
+    const { unpinnedRangesRule } = await import(
+      '../src/gates/dependency/rules/unpinned-ranges.js'
+    );
+    const ctx = makeContext({
+      project: {
+        root: '/p',
+        ignoreScripts: false,
+        manifestRanges: {
+          lodash: '^4.17.21',
+          chalk: '4.1.2',
+          'always-latest': 'latest',
+        },
+      },
+    });
+    const findings = await unpinnedRangesRule.run(ctx);
+    expect(findings.map((f) => f.location.packageName).sort()).toEqual([
+      'always-latest',
+      'lodash',
+    ]);
+    expect(findings.every((f) => f.severity === 'low')).toBe(true);
+  });
+
+  it('is silent when every range is pinned', async () => {
+    const { unpinnedRangesRule } = await import(
+      '../src/gates/dependency/rules/unpinned-ranges.js'
+    );
+    const ctx = makeContext({
+      project: {
+        root: '/p',
+        ignoreScripts: false,
+        manifestRanges: { lodash: '4.17.21', chalk: '5.3.0' },
+      },
+    });
+    expect(await unpinnedRangesRule.run(ctx)).toHaveLength(0);
   });
 });
 
