@@ -54,6 +54,7 @@ export const dynamicExecRule: DependencyRule = {
       if (hits.length === 0) continue;
 
       const distinctPatterns = [...new Set(hits.map((h) => h.pattern))].sort();
+      const distinctFiles = [...new Set(hits.map((h) => h.file))];
       findings.push({
         ruleId: 'dynamic-exec',
         severity: 'medium',
@@ -69,7 +70,7 @@ export const dynamicExecRule: DependencyRule = {
           'are rare; if the use is genuinely required (a template engine, a parser generator), ' +
           'suppress this finding for the specific package via the `ignores` config with a ' +
           'brief justification.',
-        data: { hits },
+        data: { files: distinctFiles, hits },
         suppressible: true,
       });
     }
