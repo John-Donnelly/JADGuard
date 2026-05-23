@@ -1,6 +1,14 @@
 import type { Cache } from './cache.js';
 
-/** Looks up package publish metadata, used by the `cooldown` rule. */
+/** Provenance-relevant fields the `provenance` rule reads off the packument. */
+export interface DistInfo {
+  /** Count of Sigstore signatures attached to the version (typically 0 or 1). */
+  signatures: number;
+  /** True when the version declares an attestation bundle (SLSA provenance). */
+  hasAttestations: boolean;
+}
+
+/** Looks up registry packument data used by the dependency rules. */
 export interface RegistryClient {
   /**
    * ISO-8601 publish time for an exact version, or `undefined` when the
@@ -8,6 +16,11 @@ export interface RegistryClient {
    * (network failure, timeout) so the caller degrades the check.
    */
   getPublishTime(name: string, version: string): Promise<string | undefined>;
+  /**
+   * Provenance signal summary for an exact version, or `undefined` when the
+   * package or version is unknown. Throws on lookup failure.
+   */
+  getDistInfo(name: string, version: string): Promise<DistInfo | undefined>;
 }
 
 export interface HttpRegistryClientOptions {
@@ -18,12 +31,27 @@ export interface HttpRegistryClientOptions {
   fetchImpl?: typeof fetch;
   /** Per-request timeout. */
   timeoutMs?: number;
-  /** How long publish-time data stays cached. */
+  /** How long packument data stays cached. */
   cacheTtlMs?: number;
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+/** Subset of the npm packument we actually consume, kept compact for caching. */
+interface PackumentData {
+  time: Record<string, string>;
+  versions: Record<string, PackumentVersion>;
+}
+
+interface PackumentVersion {
+  dist?: PackumentDist;
+}
+
+interface PackumentDist {
+  signatures?: unknown;
+  attestations?: unknown;
+}
 
 /** Encodes a package name for a registry URL, preserving a scope's `@`. */
 function encodePackageName(name: string): string {
@@ -49,19 +77,41 @@ export class HttpRegistryClient implements RegistryClient {
   }
 
   async getPublishTime(name: string, version: string): Promise<string | undefined> {
-    const cacheKey = `npm-time:${name}`;
-    let times = await this.cache.get<Record<string, string>>(cacheKey);
-    if (!times) {
-      const fetched = await this.fetchTimes(name);
-      if (!fetched) return undefined; // package not found — do not cache
-      times = fetched;
-      await this.cache.set(cacheKey, times, this.cacheTtlMs);
-    }
-    return times[version];
+    const packument = await this.getPackument(name);
+    return packument?.time[version];
   }
 
-  /** Returns the version→publish-time map, or `undefined` on a 404. */
-  private async fetchTimes(name: string): Promise<Record<string, string> | undefined> {
+  async getDistInfo(name: string, version: string): Promise<DistInfo | undefined> {
+    const packument = await this.getPackument(name);
+    const dist = packument?.versions[version]?.dist;
+    if (!packument || !dist) return undefined;
+    return {
+      signatures: Array.isArray(dist.signatures) ? dist.signatures.length : 0,
+      hasAttestations: dist.attestations !== undefined && dist.attestations !== null,
+    };
+  }
+
+  /**
+   * Fetches and caches the registry packument for `name`. Returns `undefined`
+   * for a 404 (package not found) and throws on other failures so the caller
+   * can degrade the check.
+   */
+  private async getPackument(name: string): Promise<PackumentData | undefined> {
+    const cacheKey = `npm-packument:${name}`;
+    const cached = await this.cache.get<PackumentData>(cacheKey);
+    if (cached) return cached;
+    const fetched = await this.fetchPackument(name);
+    if (!fetched) return undefined;
+    await this.cache.set(cacheKey, fetched, this.cacheTtlMs);
+    return fetched;
+  }
+
+  /**
+   * Talks to the registry. Pares the response down to the fields the rules
+   * actually need — `time` and per-version `dist.signatures` / `attestations`
+   * — so the cache stays bounded even for huge packuments.
+   */
+  private async fetchPackument(name: string): Promise<PackumentData | undefined> {
     const url = `${this.registry}/${encodePackageName(name)}`;
     let response: Response;
     try {
@@ -79,11 +129,27 @@ export class HttpRegistryClient implements RegistryClient {
       throw new Error(`registry returned HTTP ${response.status} for ${name}`);
     }
 
-    const body = (await response.json()) as { time?: Record<string, unknown> };
-    const times: Record<string, string> = {};
+    const body = (await response.json()) as {
+      time?: Record<string, unknown>;
+      versions?: Record<string, unknown>;
+    };
+
+    const time: Record<string, string> = {};
     for (const [key, value] of Object.entries(body.time ?? {})) {
-      if (typeof value === 'string') times[key] = value;
+      if (typeof value === 'string') time[key] = value;
     }
-    return times;
+
+    const versions: Record<string, PackumentVersion> = {};
+    for (const [version, info] of Object.entries(body.versions ?? {})) {
+      if (!info || typeof info !== 'object') continue;
+      const dist = (info as Record<string, unknown>).dist;
+      if (!dist || typeof dist !== 'object') continue;
+      const d = dist as Record<string, unknown>;
+      versions[version] = {
+        dist: { signatures: d.signatures, attestations: d.attestations },
+      };
+    }
+
+    return { time, versions };
   }
 }
