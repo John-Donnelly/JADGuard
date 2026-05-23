@@ -1318,6 +1318,115 @@ describe('dynamic-exec rule (code gate)', () => {
   });
 });
 
+describe('process-spawn rule (code gate)', () => {
+  const codeDep = makeDep({
+    name: 'spawner',
+    version: '1.0.0',
+    resolved: 'https://registry.test/spawner.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  it('flags require("child_process") + .exec(...)', async () => {
+    const { processSpawnRule } = await import(
+      '../src/gates/code/rules/process-spawn.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'spawner@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "const cp = require('child_process');",
+                'cp.exec("ls -la", () => {});',
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    const findings = await processSpawnRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+  });
+
+  it('flags ESM `import { spawn } from "child_process"` + spawn(...)', async () => {
+    const { processSpawnRule } = await import(
+      '../src/gates/code/rules/process-spawn.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'spawner@1.0.0': buildExtracted([
+            {
+              path: 'index.mjs',
+              content: [
+                "import { spawn } from 'node:child_process';",
+                "spawn('whoami');",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await processSpawnRule.run(ctx)).toHaveLength(1);
+  });
+
+  it('does not flag regex.exec(...) without a child_process import', async () => {
+    const { processSpawnRule } = await import(
+      '../src/gates/code/rules/process-spawn.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'spawner@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: 'const re = /foo/g; const m = re.exec("foobar"); module.exports = m;',
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await processSpawnRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('does not flag a child_process import without a spawn/exec call', async () => {
+    const { processSpawnRule } = await import(
+      '../src/gates/code/rules/process-spawn.js'
+    );
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'spawner@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: "module.exports = require('child_process');",
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await processSpawnRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({

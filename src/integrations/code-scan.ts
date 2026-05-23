@@ -27,6 +27,8 @@
 export interface CodeScanResult {
   /** Source with string-literal and comment runs blanked to spaces. */
   code: string;
+  /** Source with only comment runs blanked — strings preserved. */
+  noComments: string;
   /** All string-literal contents concatenated, newline-separated. */
   strings: string;
   /** Longest single line in the source — useful for minified-bundle detection. */
@@ -35,6 +37,7 @@ export interface CodeScanResult {
 
 export function scanSource(source: string): CodeScanResult {
   let code = '';
+  let noComments = '';
   let strings = '';
   let i = 0;
   const n = source.length;
@@ -47,7 +50,9 @@ export function scanSource(source: string): CodeScanResult {
       const close = source.indexOf('*/', i + 2);
       const end = close === -1 ? n : close + 2;
       for (let k = i; k < end; k++) {
-        code += source[k] === '\n' ? '\n' : ' ';
+        const ch = source[k] === '\n' ? '\n' : ' ';
+        code += ch;
+        noComments += ch;
       }
       i = end;
       continue;
@@ -57,6 +62,7 @@ export function scanSource(source: string): CodeScanResult {
     if (c === '/' && source[i + 1] === '/') {
       while (i < n && source[i] !== '\n') {
         code += ' ';
+        noComments += ' ';
         i++;
       }
       continue;
@@ -66,6 +72,7 @@ export function scanSource(source: string): CodeScanResult {
     if (c === '"' || c === "'") {
       const quote = c;
       code += ' ';
+      noComments += c;
       i++;
       let chunk = '';
       while (i < n && source[i] !== quote && source[i] !== '\n') {
@@ -73,16 +80,19 @@ export function scanSource(source: string): CodeScanResult {
           // Keep both bytes in `chunk` so density measurements stay honest;
           // blank both in `code` so the pattern matcher sees no token.
           chunk += source[i]! + source[i + 1]!;
+          noComments += source[i]! + source[i + 1]!;
           code += '  ';
           i += 2;
           continue;
         }
         chunk += source[i]!;
+        noComments += source[i]!;
         code += ' ';
         i++;
       }
       if (i < n && source[i] === quote) {
         code += ' ';
+        noComments += source[i]!;
         i++;
       }
       strings += chunk + '\n';
@@ -92,21 +102,25 @@ export function scanSource(source: string): CodeScanResult {
     // Template literal (interpolation is treated as part of the string — see header docs)
     if (c === '`') {
       code += ' ';
+      noComments += c;
       i++;
       let chunk = '';
       while (i < n && source[i] !== '`') {
         if (source[i] === '\\' && i + 1 < n) {
           chunk += source[i]! + source[i + 1]!;
+          noComments += source[i]! + source[i + 1]!;
           code += '  ';
           i += 2;
           continue;
         }
         chunk += source[i]!;
+        noComments += source[i]!;
         code += source[i] === '\n' ? '\n' : ' ';
         i++;
       }
       if (i < n) {
         code += ' ';
+        noComments += source[i]!;
         i++;
       }
       strings += chunk + '\n';
@@ -114,6 +128,7 @@ export function scanSource(source: string): CodeScanResult {
     }
 
     code += c;
+    noComments += c;
     i++;
   }
 
@@ -129,5 +144,5 @@ export function scanSource(source: string): CodeScanResult {
     }
   }
 
-  return { code, strings, longestLineLength };
+  return { code, noComments, strings, longestLineLength };
 }
