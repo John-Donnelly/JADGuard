@@ -93,8 +93,9 @@ export class PrettyReporter implements Reporter {
       : finding.location.file
         ? ` (${finding.location.file})`
         : '';
+    const ruleTag = this.paint(` [${finding.ruleId}]`, ANSI.dim);
     const out = [
-      `  ${this.paint(tag, SEVERITY_STYLE[finding.severity])}${finding.title}${where}`,
+      `  ${this.paint(tag, SEVERITY_STYLE[finding.severity])}${finding.title}${where}${ruleTag}`,
       `          ${this.paint(finding.detail, ANSI.dim)}`,
     ];
     if (finding.remediation) {
