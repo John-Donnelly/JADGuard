@@ -1,5 +1,6 @@
 import type { DependencyRule } from '../dependency/types.js';
 import { dynamicExecRule } from './rules/dynamic-exec.js';
+import { obfuscationRule } from './rules/obfuscation.js';
 import { processSpawnRule } from './rules/process-spawn.js';
 
 /** A code-gate rule shares the dependency gate's context shape. */
@@ -11,6 +12,7 @@ export { gatherScannableFiles, type ScannableFile } from './scope.js';
 export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
   'dynamic-exec',
   'process-spawn',
+  'obfuscation',
 ]);
 
 /**
@@ -20,5 +22,5 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
  * Phase 7 adds the behavioural-chain rules and the chain detector.
  */
 export function codeRuleCatalog(): CodeRule[] {
-  return [dynamicExecRule, processSpawnRule];
+  return [dynamicExecRule, processSpawnRule, obfuscationRule];
 }
