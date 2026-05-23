@@ -6,6 +6,7 @@ import { gitDepRule } from './rules/git-dep.js';
 import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
 import { selfIntegrityRule } from './rules/self-integrity.js';
+import { unpinnedRangesRule } from './rules/unpinned-ranges.js';
 import type { DependencyGateContext, DependencyRule } from './types.js';
 
 export type {
@@ -30,6 +31,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     installScriptsRule,
     integrityRule,
     gitDepRule,
+    unpinnedRangesRule,
     cooldownRule,
     advisoriesRule,
   ];

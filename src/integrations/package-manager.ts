@@ -16,6 +16,13 @@ export interface ProjectInfo {
    * rule uses to decide severity.
    */
   ignoreScripts: boolean;
+  /**
+   * The version ranges the project declares in `package.json`, merged across
+   * `dependencies`, `devDependencies` and `optionalDependencies`. Used by the
+   * `unpinned-ranges` rule. `peerDependencies` are deliberately excluded —
+   * peer ranges describe compatibility, not what gets installed.
+   */
+  manifestRanges: Record<string, string>;
 }
 
 async function readTextIfExists(path: string): Promise<string | undefined> {
@@ -32,6 +39,24 @@ function parsePackageManagerField(value: unknown): PackageManager | undefined {
   const name = value.split('@', 1)[0];
   if (name === 'npm' || name === 'pnpm' || name === 'yarn' || name === 'bun') return name;
   return undefined;
+}
+
+/**
+ * Reads the declared dependency ranges from a parsed `package.json`. Merges
+ * `dependencies`, `devDependencies`, and `optionalDependencies` — the three
+ * fields whose ranges actually drive what gets installed.
+ */
+function readManifestRanges(pkg: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const field of ['dependencies', 'devDependencies', 'optionalDependencies'] as const) {
+    const deps = pkg[field];
+    if (deps && typeof deps === 'object') {
+      for (const [name, range] of Object.entries(deps as Record<string, unknown>)) {
+        if (typeof range === 'string') out[name] = range;
+      }
+    }
+  }
+  return out;
 }
 
 /** Detects whether the project disables lifecycle scripts. */
@@ -53,6 +78,7 @@ export async function readProjectInfo(dir: string): Promise<ProjectInfo> {
   const info: ProjectInfo = {
     root: dir,
     ignoreScripts: detectIgnoreScripts(npmrc, yarnrc),
+    manifestRanges: {},
   };
 
   if (pkgRaw) {
@@ -62,6 +88,7 @@ export async function readProjectInfo(dir: string): Promise<ProjectInfo> {
       if (typeof pkg.version === 'string') info.version = pkg.version;
       const manager = parsePackageManagerField(pkg.packageManager);
       if (manager) info.packageManager = manager;
+      info.manifestRanges = readManifestRanges(pkg);
     } catch {
       // A malformed package.json is not Guard's concern — leave fields unset.
     }
