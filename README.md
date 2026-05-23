@@ -71,6 +71,10 @@ install scripts stay blocked.
 
 ## The dependency gate
 
+A per-rule reference page exists for each rule under
+[`docs/rules/`](docs/rules/README.md) — what it catches, false-positive
+modes, and remediation guidance.
+
 | Rule                    | Default  | Network | What it catches                                                                       |
 | ----------------------- | -------- | :-----: | ------------------------------------------------------------------------------------- |
 | `install-scripts`       | high\*   |    —    | Dependencies that declare install/lifecycle scripts.                                  |
