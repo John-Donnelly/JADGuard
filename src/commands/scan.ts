@@ -27,6 +27,7 @@ import { HttpOsvClient } from '../integrations/osv.js';
 import { readProjectInfo, type ProjectInfo } from '../integrations/package-manager.js';
 import { HttpRegistryClient } from '../integrations/registry.js';
 import { HttpTarballClient } from '../integrations/tarball.js';
+import { loadBundledThreatFeed } from '../integrations/threat-feed.js';
 import { NO_LOCKFILE_RULE, noLockfileFinding } from '../preconditions.js';
 import type { Report } from '../reporters/types.js';
 import { LockfileError } from '../util/errors.js';
@@ -220,6 +221,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
   const cache = options.offline
     ? new MemoryCache()
     : new FileCache(`${dir}/.jadguard-cache`, 'registry');
+  const threatFeed = loadBundledThreatFeed();
   const context: DependencyGateContext = {
     scanType,
     project,
@@ -232,6 +234,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
       cache,
       registry: new HttpRegistryClient({ registry: config.registry, cache }),
       osv: new HttpOsvClient(),
+      threatFeed,
       // The tarball pipeline writes its own content-addressed disk cache and
       // makes outbound HTTP, so it is off in `--offline` mode.
       ...(options.offline
@@ -277,6 +280,11 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     dependenciesInScope: inScope.length,
     suppressedCount: suppression.suppressed.length,
     staleIgnores: suppression.staleIgnores,
+    threatFeed: {
+      generatedAt: threatFeed.generatedAt,
+      popularCount: threatFeed.popularCount,
+      source: threatFeed.source,
+    },
     startedAt: startedAt.toISOString(),
     finishedAt: new Date().toISOString(),
   };

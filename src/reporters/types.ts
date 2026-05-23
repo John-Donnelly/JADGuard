@@ -24,6 +24,12 @@ export interface Report {
   suppressedCount: number;
   /** Ignore entries that matched nothing or have expired. */
   staleIgnores: IgnoreRule[];
+  /** Metadata for the bundled threat feed, surfaced so consumers can spot staleness. */
+  threatFeed?: {
+    generatedAt: string;
+    popularCount: number;
+    source: string;
+  };
   startedAt: string;
   finishedAt: string;
 }

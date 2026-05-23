@@ -5,6 +5,7 @@ import type { OsvClient } from '../../integrations/osv.js';
 import type { ProjectInfo } from '../../integrations/package-manager.js';
 import type { RegistryClient } from '../../integrations/registry.js';
 import type { TarballClient } from '../../integrations/tarball.js';
+import type { ThreatFeed } from '../../integrations/threat-feed.js';
 import type { ParsedLockfile } from './lockfile/types.js';
 
 /** `scan` evaluates only changed dependencies; `audit` evaluates them all. */
@@ -38,6 +39,11 @@ export interface GateServices {
    * degrade gracefully when it is not provided.
    */
   tarballs?: TarballClient;
+  /**
+   * Bundled threat-feed data (popular package list, etc.). Absent in unit
+   * tests that don't need it; otherwise loaded once at scan start.
+   */
+  threatFeed?: ThreatFeed;
 }
 
 /** Everything a dependency rule needs to produce findings. */

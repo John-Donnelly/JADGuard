@@ -53,6 +53,7 @@ export class JsonReporter implements Reporter {
       })),
       degraded: verdict.degraded,
       staleIgnores: report.staleIgnores,
+      threatFeed: report.threatFeed ?? null,
     };
     return JSON.stringify(payload, null, 2);
   }

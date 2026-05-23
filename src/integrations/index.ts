@@ -26,5 +26,7 @@ export type {
   HttpTarballClientOptions,
 } from './tarball.js';
 export { HttpTarballClient } from './tarball.js';
+export type { ThreatFeed } from './threat-feed.js';
+export { loadBundledThreatFeed } from './threat-feed.js';
 export type { ProjectInfo } from './package-manager.js';
 export { readProjectInfo } from './package-manager.js';
