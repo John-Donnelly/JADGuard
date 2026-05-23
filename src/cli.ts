@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { writeFile } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
-import { runInit, runScan } from './commands/index.js';
+import { runInit, runScan, runVerifySignatures } from './commands/index.js';
 import { isSeverity, type Severity } from './engine/severity.js';
 import { EXIT_FAIL, type GuardMode } from './engine/verdict.js';
 import { getReporter, isReporterFormat } from './reporters/index.js';
@@ -16,9 +16,10 @@ Usage:
   jadguard <command> [options]
 
 Commands:
-  scan      Gate the lockfile diff against a git baseline (use this on pull requests)
-  audit     Gate the entire resolved dependency tree
-  init      Write a starter jadguard.config.json
+  scan                Gate the lockfile diff against a git baseline (use this on pull requests)
+  audit               Gate the entire resolved dependency tree
+  init                Write a starter jadguard.config.json
+  verify-signatures   Run only the provenance rule (signature-or-fail in CI)
 
 Options:
   --dir <path>          Project directory (default: current directory)
@@ -205,9 +206,42 @@ async function main(argv: string[]): Promise<number> {
       return runScanCommand(args, dir, 'audit');
     case 'init':
       return runInitCommand(args, dir);
+    case 'verify-signatures':
+      return runVerifySignaturesCommand(args, dir);
     default:
       throw new UsageError(`unknown command: ${command}`);
   }
+}
+
+async function runVerifySignaturesCommand(
+  args: ParsedArgs,
+  dir: string,
+): Promise<number> {
+  const format = args.values.get('--format') ?? 'pretty';
+  if (!isReporterFormat(format)) {
+    throw new UsageError(`invalid --format: ${format} (expected pretty, json or sarif)`);
+  }
+  const { report, verdict } = await runVerifySignatures({
+    dir,
+    configPath: args.values.get('--config'),
+    offline: args.bools.has('--offline'),
+  });
+  const useColor =
+    format === 'pretty' &&
+    !args.bools.has('--no-color') &&
+    !process.env.NO_COLOR &&
+    process.stdout.isTTY === true;
+  const rendered = getReporter(format, { color: useColor }).format(report);
+
+  const outFile = args.values.get('--output');
+  if (outFile) {
+    const path = isAbsolute(outFile) ? outFile : resolve(dir, outFile);
+    await writeFile(path, `${rendered}\n`, 'utf8');
+    process.stdout.write(`Report written to ${path}\n`);
+  } else {
+    process.stdout.write(`${rendered}\n`);
+  }
+  return verdict.exitCode;
 }
 
 main(process.argv.slice(2))
