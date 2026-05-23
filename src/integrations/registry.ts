@@ -61,6 +61,16 @@ export interface RegistryClient {
    */
   getRegistryInstallScript(name: string, version: string): Promise<boolean | undefined>;
   /**
+   * Verbatim install-lifecycle scripts (preinstall / install / postinstall)
+   * declared in the registry packument for `version`. Used by
+   * `manifest-tampering` to compare against the tarball's own package.json.
+   * Returns `undefined` when the version is unknown.
+   */
+  getRegistryScripts(
+    name: string,
+    version: string,
+  ): Promise<Record<string, string> | undefined>;
+  /**
    * The repository block declared in the version manifest, normalised to an
    * object form. Returns `undefined` when no repository is declared or the
    * version is unknown.
@@ -118,6 +128,8 @@ interface PackumentVersion {
   bundleDependencies?: string[];
   /** True when the version declares any of preinstall / install / postinstall. */
   hasInstallScript?: boolean;
+  /** Verbatim install-lifecycle script values declared in the manifest. */
+  installScripts?: Record<string, string>;
   /** True when the version's manifest exists in the packument at all. */
   present?: boolean;
   /** Normalised `repository` block from the version manifest. */
@@ -225,6 +237,16 @@ export class HttpRegistryClient implements RegistryClient {
     const entry = packument?.versions[version];
     if (!entry?.present) return undefined;
     return entry.hasInstallScript === true;
+  }
+
+  async getRegistryScripts(
+    name: string,
+    version: string,
+  ): Promise<Record<string, string> | undefined> {
+    const packument = await this.getPackument(name);
+    const entry = packument?.versions[version];
+    if (!entry?.present) return undefined;
+    return entry.installScripts ?? {};
   }
 
   async getRepositoryInfo(
@@ -354,10 +376,15 @@ export class HttpRegistryClient implements RegistryClient {
       const scripts = data.scripts;
       if (scripts && typeof scripts === 'object') {
         const s = scripts as Record<string, unknown>;
-        entry.hasInstallScript =
-          typeof s.preinstall === 'string' ||
-          typeof s.install === 'string' ||
-          typeof s.postinstall === 'string';
+        const installScripts: Record<string, string> = {};
+        for (const key of ['preinstall', 'install', 'postinstall'] as const) {
+          const value = s[key];
+          if (typeof value === 'string') installScripts[key] = value;
+        }
+        if (Object.keys(installScripts).length > 0) {
+          entry.installScripts = installScripts;
+        }
+        entry.hasInstallScript = Object.keys(installScripts).length > 0;
       }
       const osField = data.os;
       if (Array.isArray(osField)) {

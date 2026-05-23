@@ -878,6 +878,105 @@ describe('tarball-anomaly rule', () => {
   });
 });
 
+describe('manifest-tampering rule', () => {
+  it('flags a tarball that declares an install script the registry does not', async () => {
+    const { manifestTamperingRule } = await import(
+      '../src/gates/dependency/rules/manifest-tampering.js'
+    );
+    const dep = makeDep({
+      name: 'drifted',
+      version: '1.0.0',
+      resolved: 'https://registry.test/drifted.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        // Registry says no install scripts.
+        registry: stubRegistry({}, {}, {}, {}, {}, {}, {}, {}, { 'drifted@1.0.0': {} }),
+        tarballs: stubTarballs({
+          'drifted@1.0.0': buildExtracted([
+            {
+              path: 'package.json',
+              content:
+                '{"name":"drifted","version":"1.0.0","scripts":{"postinstall":"node bad.js"}}',
+            },
+          ]),
+        }),
+      },
+    });
+    const findings = await manifestTamperingRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+  });
+
+  it('is silent when the tarball and registry agree', async () => {
+    const { manifestTamperingRule } = await import(
+      '../src/gates/dependency/rules/manifest-tampering.js'
+    );
+    const dep = makeDep({
+      name: 'agreed',
+      version: '1.0.0',
+      resolved: 'https://registry.test/agreed.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry(
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          { 'agreed@1.0.0': { postinstall: 'node setup.js' } },
+        ),
+        tarballs: stubTarballs({
+          'agreed@1.0.0': buildExtracted([
+            {
+              path: 'package.json',
+              content:
+                '{"name":"agreed","version":"1.0.0","scripts":{"postinstall":"node setup.js"}}',
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await manifestTamperingRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('is silent when the tarball has no package.json', async () => {
+    const { manifestTamperingRule } = await import(
+      '../src/gates/dependency/rules/manifest-tampering.js'
+    );
+    const dep = makeDep({
+      name: 'odd',
+      version: '1.0.0',
+      resolved: 'https://registry.test/odd.tgz',
+      integrity: 'sha512-mock',
+    });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'odd@1.0.0': buildExtracted([{ path: 'index.js', content: 'x' }]),
+        }),
+      },
+    });
+    expect(await manifestTamperingRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('advisories rule', () => {
   it('flags a version with a known advisory', async () => {
     const ctx = makeContext({
