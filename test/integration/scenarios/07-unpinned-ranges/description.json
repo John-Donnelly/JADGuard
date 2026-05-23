@@ -1,0 +1,4 @@
+{
+  "summary": "package.json mixes caret, tilde, and `latest` ranges. Lockfile pins to specific versions for now.",
+  "attack": "Floating ranges are the exact population that auto-adopts a poisoned republish during the typical hours-long compromise window. Severity is `low` by design; the rule is excluded from `failOn: high` by default."
+}

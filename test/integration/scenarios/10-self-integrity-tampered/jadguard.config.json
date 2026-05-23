@@ -1,0 +1,9 @@
+{
+  "mode": "warn",
+  "rules": {
+    "self-integrity": { "enabled": false, "severity": "low" }
+  },
+  "ignores": [
+    { "rule": "self-integrity", "reason": "trying to disable Guard's anti-tamper rule" }
+  ]
+}

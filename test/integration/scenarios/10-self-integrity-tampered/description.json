@@ -1,0 +1,4 @@
+{
+  "summary": "Config attempts to disable, downgrade, AND ignore the non-suppressible self-integrity rule. mode is `warn` to test that the non-suppressible finding still fails the verdict.",
+  "attack": "The first thing a compromised project (or developer under deadline pressure) would try: silently switch off the gate. Strategy makes this load-bearing: it must produce a CRITICAL non-suppressible finding that fails the verdict even in warn mode."
+}

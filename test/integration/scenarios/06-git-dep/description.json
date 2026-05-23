@@ -1,0 +1,4 @@
+{
+  "summary": "Dependency resolved from a git source rather than the registry.",
+  "attack": "Git deps skip the publishing pipeline (no integrity hash, no provenance, no advisory feed). The tj-actions/changed-files compromise (CVE-2025-30066) used exactly this technique by retrofitting tags."
+}

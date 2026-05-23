@@ -1,0 +1,4 @@
+{
+  "summary": "Dependency declares an install script; project has no ignore-scripts posture.",
+  "attack": "The primary execution vector for npm supply-chain attacks: a poisoned release of a package with a lifecycle script runs arbitrary code on every machine that installs it. Without ignore-scripts the script will execute on install."
+}

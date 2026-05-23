@@ -1,0 +1,4 @@
+{
+  "summary": "Same install-script dependency, but the project sets ignore-scripts=true in .npmrc.",
+  "attack": "Same as scenario 03, with the project's posture mitigating the actual execution. Guard reports at LOW severity (informational) — the package still WOULD execute code if installed without the guard."
+}

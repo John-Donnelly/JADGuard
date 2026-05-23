@@ -55,7 +55,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "integration": "node test/integration/run.mjs"
   },
   "dependencies": {
     "@yarnpkg/parsers": "3.0.3",

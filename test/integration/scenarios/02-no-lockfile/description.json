@@ -1,0 +1,4 @@
+{
+  "summary": "A project declares deps but commits no lockfile — installs are not reproducible.",
+  "attack": "Floating-range install picks up whatever the registry currently serves. Every poisoned-republish vector relies on resolvers picking up the new version."
+}

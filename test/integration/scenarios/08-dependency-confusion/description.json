@@ -1,0 +1,4 @@
+{
+  "summary": ".npmrc declares @company as an internal-registry scope; the lockfile resolved @company/internal-util from the PUBLIC registry instead.",
+  "attack": "Classic dependency-confusion: a private-scope name also exists publicly with a higher version, and the resolver picked up the public (potentially malicious) one."
+}
