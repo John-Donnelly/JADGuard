@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 import { writeFile } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
-import { runInit, runScan, runVerifySignatures } from './commands/index.js';
+import {
+  runAllow,
+  runInit,
+  runInstall,
+  runScan,
+  runVerifySignatures,
+} from './commands/index.js';
 import { isSeverity, type Severity } from './engine/severity.js';
 import { EXIT_FAIL, type GuardMode } from './engine/verdict.js';
 import { getReporter, isReporterFormat } from './reporters/index.js';
@@ -20,6 +26,8 @@ Commands:
   audit               Gate the entire resolved dependency tree
   init                Write a starter jadguard.config.json
   verify-signatures   Run only the provenance rule (signature-or-fail in CI)
+  install             Install dependencies, running lifecycle scripts only for allowlisted packages
+  allow               Manage the install allowlist (allow.json)
 
 Options:
   --dir <path>          Project directory (default: current directory)
@@ -33,6 +41,9 @@ Options:
   --offline             Skip network-dependent rules (cooldown, advisories)
   --code                Enable the AST code-gate rules (off by default in v0.x)
   --no-color            Disable coloured output
+  --dry-run             (install) Print what would run without executing
+  --remove              (allow) Remove the named package from the allowlist
+  --list                (allow) Show the current allowlist and exit
   --force               (init) Overwrite an existing config file
   -h, --help            Show this help
   -v, --version         Show the Guard version
@@ -62,6 +73,9 @@ const BOOL_FLAGS = new Set([
   '--no-color',
   '--force',
   '--code',
+  '--dry-run',
+  '--remove',
+  '--list',
   '--help',
   '--version',
   '-h',
@@ -208,9 +222,71 @@ async function main(argv: string[]): Promise<number> {
       return runInitCommand(args, dir);
     case 'verify-signatures':
       return runVerifySignaturesCommand(args, dir);
+    case 'install':
+      return runInstallCommand(args, dir);
+    case 'allow':
+      return runAllowCommand(args, dir);
     default:
       throw new UsageError(`unknown command: ${command}`);
   }
+}
+
+async function runInstallCommand(args: ParsedArgs, dir: string): Promise<number> {
+  const dryRun = args.bools.has('--dry-run');
+  const result = await runInstall({ dir, dryRun });
+  const lines = [
+    `${dryRun ? 'Would run' : 'Ran'}: ${result.installCommand}`,
+    `Allowed scripts ${dryRun ? 'that would run' : 'that ran'}: ${result.ranScripts.length}`,
+  ];
+  for (const r of result.ranScripts) lines.push(`  · ${r.pkg} (${r.lifecycle})`);
+  if (result.skippedScripts.length > 0) {
+    lines.push(`Scripts skipped (not in allow.json): ${result.skippedScripts.length}`);
+    for (const r of result.skippedScripts.slice(0, 10)) {
+      lines.push(`  · ${r.pkg} (${r.lifecycle})`);
+    }
+    if (result.skippedScripts.length > 10) {
+      lines.push(`  · …and ${result.skippedScripts.length - 10} more`);
+    }
+  }
+  process.stdout.write(`${lines.join('\n')}\n`);
+  return 0;
+}
+
+async function runAllowCommand(args: ParsedArgs, dir: string): Promise<number> {
+  let action: 'add' | 'remove' | 'list';
+  if (args.bools.has('--list')) action = 'list';
+  else if (args.bools.has('--remove')) action = 'remove';
+  else action = 'add';
+
+  const pkg = args.positionals[1];
+  if (action !== 'list' && !pkg) {
+    throw new UsageError(`'allow ${action}' requires a package name`);
+  }
+  const result = await runAllow({
+    dir,
+    action,
+    ...(pkg ? { pkg } : {}),
+  });
+
+  if (action === 'list') {
+    if (result.packages.length === 0) {
+      process.stdout.write('(allowlist empty)\n');
+    } else {
+      for (const p of result.packages) process.stdout.write(`${p}\n`);
+    }
+    return 0;
+  }
+  if (result.changed) {
+    process.stdout.write(
+      `${action === 'add' ? 'Added' : 'Removed'} ${pkg}. ` +
+        `Allowlist now has ${result.packages.length} package(s).\n`,
+    );
+  } else {
+    process.stdout.write(
+      `No change — ${pkg} was already ${action === 'add' ? 'on' : 'off'} the allowlist.\n`,
+    );
+  }
+  return 0;
 }
 
 async function runVerifySignaturesCommand(
