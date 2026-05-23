@@ -6,6 +6,7 @@ import type { Finding } from '../engine/finding.js';
 import type { Severity } from '../engine/severity.js';
 import { applyIgnores } from '../engine/suppression.js';
 import { computeVerdict, type GuardMode, type Verdict } from '../engine/verdict.js';
+import { detectChains } from '../gates/code/chain.js';
 import { runDependencyGate } from '../gates/dependency/index.js';
 import type {
   DependencyGateContext,
@@ -257,12 +258,19 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     if (ruleConfig.severity) severityOverrides[id] = ruleConfig.severity;
   }
 
-  const { findings, degraded } = await runDependencyGate(context, {
+  const { findings: gateFindings, degraded } = await runDependencyGate(context, {
     offline: options.offline ?? false,
     disabledRuleIds,
     severityOverrides,
     includeCodeGate: config.codeGate.enabled,
   });
+
+  // Append chain findings only when the code gate ran — they describe
+  // co-occurrence of code-gate rule hits, so there is nothing to chain
+  // otherwise.
+  const findings = config.codeGate.enabled
+    ? [...gateFindings, ...detectChains(gateFindings)]
+    : gateFindings;
 
   const suppression = applyIgnores(findings, config.ignores, startedAt);
   const verdict = computeVerdict({
