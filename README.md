@@ -130,12 +130,13 @@ Or in config:
 
 | Rule              | Default               | What it catches                                                                |
 | ----------------- | --------------------- | ------------------------------------------------------------------------------ |
+| `known-ioc`       | **critical** / high   | Installed files matching a known campaign IOC: SHA-256 hash (critical, non-suppressible), dropper filename, or payload string. |
 | `dynamic-exec`    | medium                | `eval(...)`, `new Function(...)`, `vm.runInThisContext(...)` in installed code.|
 | `process-spawn`   | medium                | `child_process` import paired with `spawn` / `exec` / `fork` primitives.       |
-| `obfuscation`     | medium                | Long base64/hex literal density, minified bundles carrying encoded payloads.   |
-| `secret-access`   | medium                | Reads of NPM_TOKEN / GITHUB_TOKEN / AWS_\* / VAULT_\* or credential paths.     |
+| `obfuscation`     | medium                | Base64/hex density, minified bundles, and the javascript-obfuscator `_0x…` self-decoder fingerprint. |
+| `secret-access`   | medium                | Reads of NPM_TOKEN / GITHUB_TOKEN / AWS_\* / VAULT_\*, credential paths, cloud IMDS (169.254.169.254), or TruffleHog. |
 | `network-exfil`   | medium                | Outbound HTTP imports paired with calls (http/https or axios/got/undici/…).    |
-| `ci-tampering`    | medium                | CI workflow paths + fs write, `git push`, or subprocess primitives.            |
+| `ci-tampering`    | medium                | CI workflow paths (or `.claude/settings.json`) + fs write, `git push`, `toJSON(secrets)`, or `pull_request_target`. |
 | `code-gate-chain` | **high** / **critical** | ≥2 of the above in the same file (`high`); ≥3 (`critical`). Synthetic, emitted by the chain detector. |
 
 The chain detector groups individual code-gate findings by `(package, file)`

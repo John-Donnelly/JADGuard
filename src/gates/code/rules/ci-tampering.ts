@@ -3,9 +3,13 @@ import { scanSource } from '../../../integrations/code-scan.js';
 import type { DependencyRule } from '../../dependency/types.js';
 import { gatherScannableFiles } from '../scope.js';
 
-/** Filesystem paths to CI/CD workflow files across major providers. */
+/**
+ * Filesystem paths to CI/CD workflow files across major providers, plus the
+ * `.claude/settings.json` agent-config file the Shai-Hulud worm writes a
+ * `SessionStart` persistence hook into.
+ */
 const CI_PATH =
-  /\.github\/workflows\/|\.gitlab-ci\.yml|\.circleci\/config(?:\.yml|\.yaml)?|bitbucket-pipelines\.yml|azure-pipelines\.yml|drone\.yml/;
+  /\.github\/workflows\/|\.gitlab-ci\.yml|\.circleci\/config(?:\.yml|\.yaml)?|bitbucket-pipelines\.yml|azure-pipelines\.yml|drone\.yml|\.claude\/settings\.json/;
 
 /** `fs.writeFile(...)` and friends — both `fs.` and destructured forms. */
 const FS_WRITE =
@@ -16,6 +20,12 @@ const GIT_PUSH_CMD = /\b(?:git\s+push|gh\s+api|gh\s+repo\s+(?:create|edit)|gh\s+
 
 /** Subprocess-spawn primitives (paired with CI path + shell command in strings). */
 const SPAWN_CALL = /\.(?:spawn|exec|execFile|execSync|spawnSync)\s*\(/;
+
+/** Serialising all CI secrets to JSON — the Shai-Hulud secret-exfil workflow. */
+const SECRET_SERIALIZE = /toJSON\(\s*secrets\s*\)/;
+
+/** A `pull_request_target` trigger — the s1ngularity/Nx CI-injection vector. */
+const PR_TARGET = /\bpull_request_target\b/;
 
 interface TamperingHit {
   file: string;
@@ -29,8 +39,11 @@ interface TamperingHit {
  *
  * The shape directly caught by the Shai-Hulud worm: a postinstall payload
  * writes a `discussion.yaml` (or similar) into `.github/workflows/` to
- * establish persistence on the compromised repository. Most legitimate
- * packages do not reference these paths in their distributed JS source.
+ * establish persistence on the compromised repository, serialises CI secrets
+ * with `toJSON(secrets)`, and writes a `SessionStart` hook into
+ * `.claude/settings.json`. Also catches the s1ngularity/Nx `pull_request_target`
+ * CI-injection vector. Most legitimate packages do not reference these paths in
+ * their distributed JS source.
  */
 export const ciTamperingRule: DependencyRule = {
   id: 'ci-tampering',
@@ -54,6 +67,8 @@ export const ciTamperingRule: DependencyRule = {
         if (FS_WRITE.test(code)) indicators.push('fs write');
         if (GIT_PUSH_CMD.test(strings)) indicators.push('git push / gh command');
         if (SPAWN_CALL.test(code)) indicators.push('subprocess spawn');
+        if (SECRET_SERIALIZE.test(strings)) indicators.push('secret serialization (toJSON(secrets))');
+        if (PR_TARGET.test(strings)) indicators.push('pull_request_target trigger');
         if (indicators.length === 0) continue;
 
         hits.push({ file: file.path, indicators });
