@@ -1,6 +1,7 @@
 import type { DependencyRule } from '../dependency/types.js';
 import { ciTamperingRule } from './rules/ci-tampering.js';
 import { dynamicExecRule } from './rules/dynamic-exec.js';
+import { knownIocRule } from './rules/known-ioc.js';
 import { networkExfilRule } from './rules/network-exfil.js';
 import { obfuscationRule } from './rules/obfuscation.js';
 import { processSpawnRule } from './rules/process-spawn.js';
@@ -19,6 +20,7 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
   'secret-access',
   'network-exfil',
   'ci-tampering',
+  'known-ioc',
 ]);
 
 /**
@@ -26,10 +28,15 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
  * config (or the CLI `--code` flag) enables them. Phase 6 ships the
  * pattern-detection rules; Phase 7 adds the behavioural-chain rules
  * (`secret-access`, `network-exfil`, `ci-tampering`) plus the chain detector
- * that elevates severity when ≥2 indicators co-occur in the same file.
+ * that elevates severity when ≥2 indicators co-occur in the same file. Phase 10
+ * adds `known-ioc` — exact campaign-IOC matching (file hash, dropper name,
+ * payload string), the code-gate counterpart to the dependency gate's
+ * `known-malware` — and sharpens the behavioural rules with the documented
+ * 2025–26 Shai-Hulud / chalk-debug / s1ngularity indicators.
  */
 export function codeRuleCatalog(): CodeRule[] {
   return [
+    knownIocRule,
     dynamicExecRule,
     processSpawnRule,
     obfuscationRule,

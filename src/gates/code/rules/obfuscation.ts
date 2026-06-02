@@ -9,6 +9,16 @@ const BASE64_RUN = /[A-Za-z0-9+/]{60,}={0,2}/g;
 const HEX_RUN = /[0-9a-fA-F]{40,}/g;
 /** Long hex constants in code (e.g. `0xDEADBEEFCAFE`). */
 const HEX_CONST = /\b0x[0-9a-fA-F]{8,}\b/g;
+/**
+ * `javascript-obfuscator`'s self-decoder signature: an immediately-invoked
+ * function whose parameters are hex-named (`_0x…`). This is the exact tool used
+ * by the September 2025 chalk/debug crypto-drainer (`const _0x112fa8=…;(function
+ * (_0x13c8b9,_0x35f660){…`) and is highly distinctive.
+ */
+const OBFUSCATOR_IIFE = /\(function\(\s*_0x[0-9a-f]+\s*,\s*_0x[0-9a-f]+\s*\)/i;
+/** Hex-named identifiers (`_0x1a2b`) — javascript-obfuscator's variable style. */
+const HEX_IDENTIFIER = /_0x[0-9a-f]{4,}/gi;
+const HEX_IDENTIFIER_THRESHOLD = 40;
 
 /** Thresholds calibrated against the real-world attacks the plan calls out. */
 const BASE64_LITERAL_THRESHOLD = 20; // Mini Shai-Hulud shipped 1,732 base64 strings.
@@ -25,6 +35,8 @@ interface FileScore {
   hexRuns: number;
   hexConstants: number;
   longestLine: number;
+  obfuscatorFingerprint: boolean;
+  hexIdentifiers: number;
 }
 
 /** Returns the list of triggered signal descriptions for a file's scores. */
@@ -46,6 +58,12 @@ function classify(score: FileScore): string[] {
     signals.push(
       `minified single line of ${score.longestLine} chars carrying encoded blobs`,
     );
+  }
+  if (score.obfuscatorFingerprint) {
+    signals.push('javascript-obfuscator self-decoder fingerprint');
+  }
+  if (score.hexIdentifiers >= HEX_IDENTIFIER_THRESHOLD) {
+    signals.push(`${score.hexIdentifiers} hex-named identifiers (obfuscator style)`);
   }
   return signals;
 }
@@ -84,6 +102,8 @@ export const obfuscationRule: DependencyRule = {
           hexRuns: (strings.match(HEX_RUN) ?? []).length,
           hexConstants: (code.match(HEX_CONST) ?? []).length,
           longestLine: longestLineLength,
+          obfuscatorFingerprint: OBFUSCATOR_IIFE.test(code),
+          hexIdentifiers: (code.match(HEX_IDENTIFIER) ?? []).length,
         };
         const signals = classify(score);
         if (signals.length > 0) flagged.push({ path: file.path, signals });
@@ -101,9 +121,11 @@ export const obfuscationRule: DependencyRule = {
         detail:
           `Detected obfuscation indicators in ${flagged.length} file${flagged.length === 1 ? '' : 's'}: ` +
           `${summary}${flagged.length > 3 ? `, …and ${flagged.length - 3} more` : ''}. The ` +
-          'September 2025 Shai-Hulud worm shipped 3–3.7 MB Webpack bundles, and the May 2026 ' +
+          'September 2025 Shai-Hulud worm shipped 3–3.7 MB Webpack bundles, the May 2026 ' +
           'Mini Shai-Hulud campaign embedded 1,732 base64 strings with runtime PBKDF2-SHA256 ' +
-          'decryption; this rule is tuned to catch their shape.',
+          'decryption, and the September 2025 chalk/debug crypto-drainer used ' +
+          'javascript-obfuscator (hex-named `_0x…` identifiers); this rule is tuned to catch ' +
+          'their shape.',
         location: { packageName: dep.name, packageVersion: dep.version },
         remediation:
           'Cross-reference the listed files against the package\'s public source repository. ' +
