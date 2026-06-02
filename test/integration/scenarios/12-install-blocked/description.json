@@ -1,0 +1,4 @@
+{
+  "summary": "`jadguard install` on a lockfile pinning the known-malicious chalk@5.6.1. The pre-install gate must refuse before the package manager runs.",
+  "attack": "Install-time blocking: a poisoned-but-pinned dependency in the lockfile. The pre-install gate (self-integrity + known-malware, offline) refuses the install and exits 1 — the package manager is never invoked, so nothing is fetched or extracted. The refusal report prints to stderr."
+}

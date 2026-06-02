@@ -2,6 +2,7 @@
 import { writeFile } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
 import {
+  runAdd,
   runAllow,
   runInit,
   runInstall,
@@ -27,6 +28,7 @@ Commands:
   init                Write a starter jadguard.config.json
   verify-signatures   Run only the provenance rule (signature-or-fail in CI)
   install             Install dependencies, running lifecycle scripts only for allowlisted packages
+  add <pkg>...        Gate package(s) against the known-malware blocklist, then add them
   allow               Manage the install allowlist (allow.json)
 
 Options:
@@ -41,7 +43,7 @@ Options:
   --offline             Skip network-dependent rules (cooldown, advisories)
   --code                Enable the AST code-gate rules (off by default in v0.x)
   --no-color            Disable coloured output
-  --dry-run             (install) Print what would run without executing
+  --dry-run             (install/add) Print what would run without executing
   --remove              (allow) Remove the named package from the allowlist
   --list                (allow) Show the current allowlist and exit
   --force               (init) Overwrite an existing config file
@@ -224,6 +226,8 @@ async function main(argv: string[]): Promise<number> {
       return runVerifySignaturesCommand(args, dir);
     case 'install':
       return runInstallCommand(args, dir);
+    case 'add':
+      return runAddCommand(args, dir);
     case 'allow':
       return runAllowCommand(args, dir);
     default:
@@ -234,6 +238,19 @@ async function main(argv: string[]): Promise<number> {
 async function runInstallCommand(args: ParsedArgs, dir: string): Promise<number> {
   const dryRun = args.bools.has('--dry-run');
   const result = await runInstall({ dir, dryRun });
+
+  if (result.blocked) {
+    const useColor =
+      !args.bools.has('--no-color') && !process.env.NO_COLOR && process.stdout.isTTY === true;
+    const rendered = getReporter('pretty', { color: useColor }).format(result.gate.report);
+    process.stderr.write(
+      `${rendered}\n\nInstall refused: the lockfile contains a confirmed-malicious or ` +
+        'self-tampering finding (above). Nothing was fetched or extracted. Remove the ' +
+        'offending dependency before installing.\n',
+    );
+    return EXIT_FAIL;
+  }
+
   const lines = [
     `${dryRun ? 'Would run' : 'Ran'}: ${result.installCommand}`,
     `Allowed scripts ${dryRun ? 'that would run' : 'that ran'}: ${result.ranScripts.length}`,
@@ -249,6 +266,32 @@ async function runInstallCommand(args: ParsedArgs, dir: string): Promise<number>
     }
   }
   process.stdout.write(`${lines.join('\n')}\n`);
+  return 0;
+}
+
+async function runAddCommand(args: ParsedArgs, dir: string): Promise<number> {
+  const specs = args.positionals.slice(1);
+  if (specs.length === 0) {
+    throw new UsageError('add requires at least one package name, e.g. `jadguard add lodash`');
+  }
+  const dryRun = args.bools.has('--dry-run');
+  const result = await runAdd({ dir, specs, dryRun });
+
+  if (result.blocked.length > 0) {
+    const lines = ['Add refused — known-malicious package(s):'];
+    for (const b of result.blocked) {
+      const where = b.scope === 'all-versions' ? 'all versions' : (b.version ?? 'this version');
+      lines.push(`  · ${b.spec} (${where}; campaign: ${b.campaign})`);
+    }
+    lines.push('', 'Nothing was added. Remove these from the command and try again.');
+    process.stderr.write(`${lines.join('\n')}\n`);
+    return EXIT_FAIL;
+  }
+
+  process.stdout.write(
+    `${dryRun ? 'Would run' : 'Ran'}: ${result.addCommand}\n` +
+      'Gate: no known-malware match. Run `jadguard install` for allowlisted-script safety.\n',
+  );
   return 0;
 }
 
