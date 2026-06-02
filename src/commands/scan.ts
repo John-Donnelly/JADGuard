@@ -298,6 +298,8 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     threatFeed: {
       generatedAt: threatFeed.generatedAt,
       popularCount: threatFeed.popularCount,
+      blocklistCount: threatFeed.blocklistCount,
+      blocklistGeneratedAt: threatFeed.blocklistGeneratedAt,
       source: threatFeed.source,
     },
     startedAt: startedAt.toISOString(),

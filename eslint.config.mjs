@@ -24,8 +24,8 @@ export default tseslint.config(
     },
   },
   {
-    // The integration harness is a plain Node-ESM maintenance script.
-    files: ['test/integration/**/*.mjs'],
+    // Plain Node-ESM maintenance scripts (integration harness, feed refresh).
+    files: ['test/integration/**/*.mjs', 'scripts/**/*.mjs'],
     languageOptions: {
       sourceType: 'module',
       globals: {
@@ -33,6 +33,7 @@ export default tseslint.config(
         console: 'readonly',
         Buffer: 'readonly',
         URL: 'readonly',
+        fetch: 'readonly',
       },
     },
     rules: {

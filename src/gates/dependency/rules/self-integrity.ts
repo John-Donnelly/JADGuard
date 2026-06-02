@@ -7,7 +7,7 @@ import type { DependencyRule } from '../types.js';
  * additionally *reports* any attempt, so tampering is visible rather than
  * silent.
  */
-export const NON_SUPPRESSIBLE_RULE_IDS = ['self-integrity'] as const;
+export const NON_SUPPRESSIBLE_RULE_IDS = ['self-integrity', 'known-malware'] as const;
 
 function tamperFinding(what: string): Finding {
   return {
