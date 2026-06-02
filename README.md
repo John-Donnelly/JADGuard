@@ -77,6 +77,7 @@ modes, and remediation guidance.
 
 | Rule                    | Default  | Network | What it catches                                                                       |
 | ----------------------- | -------- | :-----: | ------------------------------------------------------------------------------------- |
+| `known-malware`         | critical |    —    | Exact `name@version` match against the bundled known-malware blocklist. **Non-suppressible.** Works offline. |
 | `install-scripts`       | high\*   |    —    | Dependencies that declare install/lifecycle scripts.                                  |
 | `integrity`             | medium   |    —    | Registry deps missing or weakly pinned by integrity hash.                             |
 | `git-dep`               | medium   |    —    | Dependencies resolved from git rather than the public registry.                       |
@@ -149,9 +150,10 @@ The code gate uses a dependency-free string tokenizer (strings and comments
 blanked before pattern matching) for v0.x. A real AST parser is on the
 roadmap if false-positive discipline calls for higher fidelity.
 
-`self-integrity` is **non-suppressible**: it cannot be disabled, downgraded, or
-ignored, and its findings fail the verdict even in `warn` mode. See the
-[anti-bypass design](docs/THREAT-MODEL.md#anti-bypass-design).
+`self-integrity` and `known-malware` are **non-suppressible**: they cannot be
+disabled, downgraded, or ignored, and their findings fail the verdict even in
+`warn` mode. A confirmed-malware match is not a risk to weigh — it is malware in
+the tree. See the [anti-bypass design](docs/THREAT-MODEL.md#anti-bypass-design).
 
 ### Preconditions
 

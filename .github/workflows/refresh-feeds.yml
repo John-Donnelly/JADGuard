@@ -1,0 +1,57 @@
+name: Refresh threat feeds
+
+# Keeps the bundled known-malware blocklist fresh. A stale blocklist in a
+# security tool produces false confidence (STRATEGY.private.md §3), so this runs
+# weekly and opens a PR a human reviews — the data is never auto-merged.
+
+on:
+  schedule:
+    # 06:17 UTC every Monday (off the hour to dodge cron congestion).
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: refresh-feeds
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh known-malware blocklist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Refresh blocklist
+        run: node scripts/refresh-blocklist.mjs
+
+      - name: Open a PR if the feed changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/blocklist.json; then
+            echo "No blocklist changes."
+            exit 0
+          fi
+          DATE="$(date -u +%Y-%m-%d)"
+          BRANCH="chore/refresh-blocklist-${DATE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add data/blocklist.json
+          git commit -m "chore: refresh known-malware blocklist (${DATE})"
+          git push --force-with-lease --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore: refresh known-malware blocklist (${DATE})" \
+            --body "Automated refresh of \`data/blocklist.json\` from the Datadog malicious-software-packages dataset. Review the diff and the resulting bundle size before merging." \
+            --label "dependencies" \
+            || echo "PR may already exist for $BRANCH"

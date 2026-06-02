@@ -4,6 +4,7 @@ import { advisoriesRule } from '../src/gates/dependency/rules/advisories.js';
 import { cooldownRule } from '../src/gates/dependency/rules/cooldown.js';
 import { installScriptsRule } from '../src/gates/dependency/rules/install-scripts.js';
 import { integrityRule } from '../src/gates/dependency/rules/integrity.js';
+import { knownMalwareRule } from '../src/gates/dependency/rules/known-malware.js';
 import { selfIntegrityRule } from '../src/gates/dependency/rules/self-integrity.js';
 import { DEFAULT_CONFIG } from '../src/config/schema.js';
 import {
@@ -1189,6 +1190,77 @@ describe('typosquat rule (experimental)', () => {
       },
     });
     expect(await typosquatRule.run(ctx)).toHaveLength(0);
+  });
+});
+
+describe('known-malware rule', () => {
+  function ctxWith(
+    deps: Array<{ name: string; version: string }>,
+    blocklist: Array<{ name: string; versions?: readonly string[]; campaign: string }>,
+    includeFeed = true,
+  ) {
+    const base = makeContext();
+    return makeContext({
+      dependencies: deps.map((d) => makeDep(d)),
+      services: {
+        cache: base.services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        ...(includeFeed ? { threatFeed: stubThreatFeed([], blocklist) } : {}),
+      },
+    });
+  }
+
+  it('blocks an exact known-malicious version with a critical, non-suppressible finding', async () => {
+    const ctx = ctxWith(
+      [{ name: 'chalk', version: '5.6.1' }],
+      [{ name: 'chalk', versions: ['5.6.1'], campaign: 'chalk-debug-cryptostealer-2025-09' }],
+    );
+    const findings = await knownMalwareRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('critical');
+    expect(findings[0]?.suppressible).toBe(false);
+    expect(findings[0]?.data?.campaign).toBe('chalk-debug-cryptostealer-2025-09');
+    expect(findings[0]?.data?.scope).toBe('version');
+  });
+
+  it('does not block a different version of a blocklisted package', async () => {
+    const ctx = ctxWith(
+      [{ name: 'chalk', version: '5.6.0' }],
+      [{ name: 'chalk', versions: ['5.6.1'], campaign: 'chalk-debug-cryptostealer-2025-09' }],
+    );
+    expect(await knownMalwareRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('blocks every version when the entry lists no versions', async () => {
+    const ctx = ctxWith(
+      [{ name: 'totally-malicious', version: '9.9.9' }],
+      [{ name: 'totally-malicious', campaign: 'datadog-guarddog' }],
+    );
+    const findings = await knownMalwareRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.data?.scope).toBe('all-versions');
+  });
+
+  it('matches the package name case-insensitively', async () => {
+    const ctx = ctxWith(
+      [{ name: 'Chalk', version: '5.6.1' }],
+      [{ name: 'chalk', versions: ['5.6.1'], campaign: 'c' }],
+    );
+    expect(await knownMalwareRule.run(ctx)).toHaveLength(1);
+  });
+
+  it('passes a package that is not on the blocklist', async () => {
+    const ctx = ctxWith(
+      [{ name: 'react', version: '18.3.1' }],
+      [{ name: 'chalk', versions: ['5.6.1'], campaign: 'c' }],
+    );
+    expect(await knownMalwareRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('degrades to no findings (does not throw) when no threat feed is present', async () => {
+    const ctx = ctxWith([{ name: 'chalk', version: '5.6.1' }], [], false);
+    expect(await knownMalwareRule.run(ctx)).toEqual([]);
   });
 });
 
