@@ -50,12 +50,13 @@ never exit the process — the verdict engine owns exit codes.
 
 | Rule                                         | Default                | What it catches                                                                |
 | -------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------ |
+| [`known-ioc`](./known-ioc.md)                | **critical** / high     | Files matching a known campaign IOC — SHA-256 hash, dropper name, or payload string. |
 | `dynamic-exec`                               | medium                 | `eval(...)`, `new Function(...)`, `vm.runInThisContext(...)` in installed code.|
 | `process-spawn`                              | medium                 | `child_process` import paired with `spawn`/`exec`/`fork` primitives.           |
-| `obfuscation`                                | medium                 | Long base64/hex literal density, minified bundles carrying encoded payloads.   |
-| `secret-access`                              | medium                 | Reads of `NPM_TOKEN` / `GITHUB_TOKEN` / `AWS_*` / `VAULT_*` or credential paths.|
+| `obfuscation`                                | medium                 | Base64/hex density, minified bundles, and the javascript-obfuscator `_0x…` fingerprint. |
+| `secret-access`                              | medium                 | Reads of `NPM_TOKEN` / `GITHUB_TOKEN` / `AWS_*` / `VAULT_*`, credential paths, cloud IMDS, or TruffleHog. |
 | `network-exfil`                              | medium                 | Outbound HTTP imports paired with calls.                                       |
-| `ci-tampering`                               | medium                 | CI workflow paths + fs write, `git push`, or subprocess primitives.            |
+| `ci-tampering`                               | medium                 | CI workflow paths (or `.claude/settings.json`) + fs write, `git push`, `toJSON(secrets)`, `pull_request_target`. |
 | [`code-gate-chain`](./code-gate-chain.md)    | **high** / **critical** | ≥2 code-gate rules co-occur in the same file (high); ≥3 (critical).            |
 
 ## Preconditions

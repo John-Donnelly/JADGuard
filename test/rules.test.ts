@@ -1940,6 +1940,199 @@ describe('ci-tampering rule (code gate)', () => {
     });
     expect(await ciTamperingRule.run(ctx)).toHaveLength(0);
   });
+
+  it('flags toJSON(secrets) secret serialization alongside a workflow path', async () => {
+    const { ciTamperingRule } = await import('../src/gates/code/rules/ci-tampering.js');
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'persistor@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "const fs = require('fs');",
+                "const body = 'run: echo ${{ toJSON(secrets) }}';",
+                "fs.writeFileSync('.github/workflows/formatter_1.yml', body);",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    const findings = await ciTamperingRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    const indicators =
+      (findings[0]?.data?.hits as Array<{ indicators: string[] }>)?.[0]?.indicators ?? [];
+    expect(indicators).toContain('secret serialization (toJSON(secrets))');
+  });
+
+  it('flags a write to the .claude/settings.json persistence target', async () => {
+    const { ciTamperingRule } = await import('../src/gates/code/rules/ci-tampering.js');
+    const ctx = makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'persistor@1.0.0': buildExtracted([
+            {
+              path: 'index.js',
+              content: [
+                "const fs = require('fs');",
+                "fs.writeFileSync('.claude/settings.json', JSON.stringify({ hooks: {} }));",
+              ].join('\n'),
+            },
+          ]),
+        }),
+      },
+    });
+    expect(await ciTamperingRule.run(ctx)).toHaveLength(1);
+  });
+});
+
+describe('known-ioc rule (code gate)', () => {
+  const codeDep = makeDep({
+    name: 'dropper',
+    version: '1.0.0',
+    resolved: 'https://registry.test/dropper.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  function ctxWithFiles(entries: Array<{ path: string; content: string }>) {
+    return makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({ 'dropper@1.0.0': buildExtracted(entries) }),
+      },
+    });
+  }
+
+  it('flags a known dropper filename at high severity (suppressible)', async () => {
+    const { knownIocRule } = await import('../src/gates/code/rules/known-ioc.js');
+    const findings = await knownIocRule.run(
+      ctxWithFiles([{ path: 'setup_bun.js', content: 'module.exports = 1;' }]),
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('high');
+    expect(findings[0]?.suppressible).toBe(true);
+    expect(findings[0]?.data?.files).toEqual(['setup_bun.js']);
+  });
+
+  it('flags a distinctive payload string', async () => {
+    const { knownIocRule } = await import('../src/gates/code/rules/known-ioc.js');
+    const findings = await knownIocRule.run(
+      ctxWithFiles([
+        { path: 'index.js', content: "const desc = 'Sha1-Hulud: The Second Coming.';" },
+      ]),
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('high');
+  });
+
+  it('stays quiet on a clean file', async () => {
+    const { knownIocRule } = await import('../src/gates/code/rules/known-ioc.js');
+    const findings = await knownIocRule.run(
+      ctxWithFiles([{ path: 'index.js', content: 'export const add = (a, b) => a + b;' }]),
+    );
+    expect(findings).toHaveLength(0);
+  });
+
+  it('matches a file by SHA-256 (critical, non-suppressible)', async () => {
+    const { collectIocHits } = await import('../src/gates/code/rules/known-ioc.js');
+    const { createHash } = await import('node:crypto');
+    const content = 'console.log("canary payload");\n';
+    const digest = createHash('sha256').update(content, 'utf8').digest('hex');
+    const hits = collectIocHits([{ path: 'x.js', content, size: content.length }], {
+      fileHashes: new Map([[digest, { campaign: 'test', description: 'canary' }]]),
+      filenames: new Map(),
+      contentFingerprints: [],
+      generatedAt: '2026-06-02',
+      count: 1,
+    });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.kind).toBe('hash');
+  });
+
+  it('escalates via the chain detector when co-located with secret-access', async () => {
+    const { knownIocRule } = await import('../src/gates/code/rules/known-ioc.js');
+    const { secretAccessRule } = await import('../src/gates/code/rules/secret-access.js');
+    const { detectChains } = await import('../src/gates/code/chain.js');
+    const ctx = ctxWithFiles([
+      {
+        path: 'setup_bun.js',
+        content: ['const t = process.env.NPM_TOKEN;', 'module.exports = t;'].join('\n'),
+      },
+    ]);
+    const findings = [...(await knownIocRule.run(ctx)), ...(await secretAccessRule.run(ctx))];
+    const chains = detectChains(findings);
+    expect(chains).toHaveLength(1);
+    expect(chains[0]?.severity).toBe('high');
+    expect(chains[0]?.data?.rules).toEqual(['known-ioc', 'secret-access']);
+  });
+});
+
+describe('Phase 10 IOC strengthening', () => {
+  const codeDep = makeDep({
+    name: 'scanner',
+    version: '1.0.0',
+    resolved: 'https://registry.test/scanner.tgz',
+    integrity: 'sha512-mock',
+  });
+
+  function ctxWith(content: string) {
+    return makeContext({
+      dependencies: [codeDep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'scanner@1.0.0': buildExtracted([{ path: 'index.js', content }]),
+        }),
+      },
+    });
+  }
+
+  it('secret-access flags a cloud IMDS endpoint', async () => {
+    const { secretAccessRule } = await import('../src/gates/code/rules/secret-access.js');
+    const findings = await secretAccessRule.run(
+      ctxWith("fetch('http://169.254.169.254/latest/meta-data/iam/');"),
+    );
+    expect(findings).toHaveLength(1);
+    const reasons =
+      (findings[0]?.data?.hits as Array<{ reasons: string[] }>)?.[0]?.reasons ?? [];
+    expect(reasons).toContain('cloud metadata service (IMDS) endpoint');
+  });
+
+  it('secret-access flags a TruffleHog invocation', async () => {
+    const { secretAccessRule } = await import('../src/gates/code/rules/secret-access.js');
+    const findings = await secretAccessRule.run(
+      ctxWith("require('child_process').exec('trufflehog filesystem .');"),
+    );
+    expect(findings).toHaveLength(1);
+    const reasons =
+      (findings[0]?.data?.hits as Array<{ reasons: string[] }>)?.[0]?.reasons ?? [];
+    expect(reasons).toContain('TruffleHog secret scanner');
+  });
+
+  it('obfuscation flags the javascript-obfuscator self-decoder fingerprint', async () => {
+    const { obfuscationRule } = await import('../src/gates/code/rules/obfuscation.js');
+    const findings = await obfuscationRule.run(
+      ctxWith('const _0x112fa8=0x180f;(function(_0x13c8b9,_0x35f660){return _0x13c8b9;})(1,2);'),
+    );
+    expect(findings).toHaveLength(1);
+    const signals =
+      (findings[0]?.data?.flagged as Array<{ signals: string[] }>)?.[0]?.signals ?? [];
+    expect(signals).toContain('javascript-obfuscator self-decoder fingerprint');
+  });
 });
 
 describe('advisories rule', () => {

@@ -17,7 +17,17 @@ const ENV_BRACKET = new RegExp(
 
 /** Filesystem paths that store credentials on the host. */
 const SENSITIVE_PATH =
-  /(?:\.npmrc\b|\.ssh\/[^"\s]+|\.aws\/credentials\b|\.aws\/config\b|\.kube\/config\b|\.git\/config\b|\.docker\/config\.json\b|\.gnupg\/[^"\s]+|id_rsa\b|id_ed25519\b)/;
+  /(?:\.npmrc\b|\.ssh\/[^"\s]+|\.aws\/credentials\b|\.aws\/config\b|\.kube\/config\b|\.git\/config\b|\.docker\/config\.json\b|\.gnupg\/[^"\s]+|\.config\/gcloud\/[^"\s]+|application_default_credentials\.json\b|id_rsa\b|id_ed25519\b)/;
+
+/**
+ * Cloud instance-metadata-service (IMDS) endpoints — the link-local metadata
+ * IP and the GCP metadata host. The Shai-Hulud worm reads role credentials
+ * straight from IMDS.
+ */
+const CLOUD_IMDS = /169\.254\.169\.254|metadata\.google\.internal/;
+
+/** TruffleHog — the secret scanner the worm downloads to harvest credentials. */
+const SECRET_SCANNER = /\btrufflehog\b/i;
 
 interface SecretHit {
   file: string;
@@ -56,6 +66,12 @@ export const secretAccessRule: DependencyRule = {
         }
         if (SENSITIVE_PATH.test(strings)) {
           reasons.push('credential filesystem path referenced');
+        }
+        if (CLOUD_IMDS.test(strings)) {
+          reasons.push('cloud metadata service (IMDS) endpoint');
+        }
+        if (SECRET_SCANNER.test(noComments)) {
+          reasons.push('TruffleHog secret scanner');
         }
         if (reasons.length > 0) hits.push({ file: file.path, reasons });
       }
