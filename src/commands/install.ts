@@ -8,8 +8,18 @@ import type { PackageManager } from '../gates/dependency/lockfile/types.js';
 import { GuardError } from '../util/errors.js';
 import { stripBom } from '../util/text.js';
 import { readAllowFile } from './allow.js';
+import { runScan, type ScanResult } from './scan.js';
 
 const execAsync = promisify(exec);
+
+/**
+ * Rules the pre-install gate runs before the package manager fetches anything.
+ * Both are non-suppressible and offline, so the gate is fast, deterministic,
+ * and cannot be configured away: a confirmed-malicious dependency or a config
+ * that tampers with Guard blocks the install before a single byte is fetched.
+ */
+const INSTALL_GATE_RULES = ['self-integrity', 'known-malware'] as const;
+const INSTALL_GATE_RULE_SET = new Set<string>(INSTALL_GATE_RULES);
 
 export interface InstallOptions {
   dir: string;
@@ -28,6 +38,13 @@ export interface InstallResult {
   skippedScripts: Array<{ pkg: string; lifecycle: string }>;
   /** True when `--dry-run` was requested (nothing was actually executed). */
   dryRun: boolean;
+  /**
+   * True when the pre-install gate refused the install — the package manager
+   * was never run, so nothing was fetched or extracted.
+   */
+  blocked: boolean;
+  /** The pre-install gate result (the findings that justified `blocked`). */
+  gate: ScanResult;
 }
 
 /** The PM-specific install command Guard runs with `--ignore-scripts`. */
@@ -94,6 +111,28 @@ export async function runInstall(options: InstallOptions): Promise<InstallResult
   const exec_ = options.execImpl ?? defaultExec;
   const allow = new Set((await readAllowFile(options.dir)).packages);
 
+  // Pre-install gate: never let the package manager fetch and extract a
+  // lockfile that already contains a confirmed-malicious dependency or a
+  // config that tampers with Guard. Offline + bundled-feed, so it adds no
+  // network round-trip and cannot be configured away.
+  const gate = await runScan({
+    dir: options.dir,
+    scanType: 'audit',
+    offline: true,
+    onlyRules: [...INSTALL_GATE_RULES],
+  });
+  const blocked = gate.verdict.findings.some((f) => INSTALL_GATE_RULE_SET.has(f.ruleId));
+  if (blocked) {
+    return {
+      installCommand,
+      ranScripts: [],
+      skippedScripts: [],
+      dryRun,
+      blocked: true,
+      gate,
+    };
+  }
+
   if (!dryRun) await exec_(installCommand, options.dir);
 
   const modulesDir = join(options.dir, 'node_modules');
@@ -101,7 +140,7 @@ export async function runInstall(options: InstallOptions): Promise<InstallResult
   const skippedScripts: InstallResult['skippedScripts'] = [];
 
   if (!existsSync(modulesDir)) {
-    return { installCommand, ranScripts, skippedScripts, dryRun };
+    return { installCommand, ranScripts, skippedScripts, dryRun, blocked: false, gate };
   }
 
   for (const name of await listPackageDirs(modulesDir)) {
@@ -141,5 +180,5 @@ export async function runInstall(options: InstallOptions): Promise<InstallResult
     }
   }
 
-  return { installCommand, ranScripts, skippedScripts, dryRun };
+  return { installCommand, ranScripts, skippedScripts, dryRun, blocked: false, gate };
 }

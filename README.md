@@ -32,7 +32,8 @@ jadguard scan                # gate dependencies that changed vs the git baselin
 jadguard audit               # gate the entire resolved dependency tree
 jadguard verify-signatures   # run only the provenance rule (signature-or-fail)
 jadguard allow esbuild       # add esbuild to the install allowlist
-jadguard install             # install with --ignore-scripts; run scripts only for allowlisted packages
+jadguard install             # gate the lockfile, then install with --ignore-scripts (allowlisted scripts only)
+jadguard add chalk           # gate chalk against the known-malware feed, then add it
 ```
 
 `scan` is the fast pull-request check — it diffs the lockfile against git and
@@ -43,10 +44,21 @@ everything.
 provenance-or-fail in CI without the rest of Guard's surface — runs only the
 `provenance` rule.
 
-`install` runs the project's package manager with `--ignore-scripts`, then
-re-runs `install`/`postinstall` lifecycle scripts **only** for packages
-named in `allow.json` (managed via `jadguard allow`). Every other package's
-install scripts stay blocked.
+`install` first runs a fast, offline **pre-install gate** (`self-integrity` +
+`known-malware`) over the lockfile and **refuses to run the package manager** —
+fetching nothing — if the resolved tree contains a confirmed-malicious
+dependency or a config that tampers with Guard. This gate cannot be configured
+away. On a clean result it runs the project's package manager with
+`--ignore-scripts`, then re-runs `install`/`postinstall` lifecycle scripts
+**only** for packages named in `allow.json` (managed via `jadguard allow`).
+Every other package's install scripts stay blocked.
+
+`add` gates one or more candidate packages against the bundled known-malware
+blocklist **before** handing off to your package manager (`npm install` /
+`pnpm add` / `yarn add` / `bun add`), so a known-bad package never reaches
+`node_modules`. A pinned spec (`jadguard add chalk@5.6.1`) gets an exact
+version check; the broader gate runs on the next `jadguard scan` / `audit`. For
+install-script safety, follow up with `jadguard install`.
 
 ### Common options
 

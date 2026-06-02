@@ -13,3 +13,5 @@ export type {
 } from './allow.js';
 export { runInstall } from './install.js';
 export type { InstallOptions, InstallResult } from './install.js';
+export { runAdd, parseSpec } from './add.js';
+export type { AddOptions, AddResult, AddBlock } from './add.js';
