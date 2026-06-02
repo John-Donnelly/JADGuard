@@ -5,7 +5,9 @@ import { dependencyConfusionRule } from '../src/gates/dependency/rules/dependenc
 import { gitDepRule } from '../src/gates/dependency/rules/git-dep.js';
 import { installScriptsRule } from '../src/gates/dependency/rules/install-scripts.js';
 import { integrityRule } from '../src/gates/dependency/rules/integrity.js';
+import { knownMalwareRule } from '../src/gates/dependency/rules/known-malware.js';
 import { selfIntegrityRule } from '../src/gates/dependency/rules/self-integrity.js';
+import { loadBundledThreatFeed } from '../src/integrations/threat-feed.js';
 import { typosquatRule } from '../src/gates/dependency/rules/typosquat.js';
 import { unpinnedRangesRule } from '../src/gates/dependency/rules/unpinned-ranges.js';
 import { makeContext, makeDep, stubThreatFeed } from './helpers.js';
@@ -67,5 +69,37 @@ describe('false-positive corpus', () => {
     ];
     const elevated = findings.filter((f) => severityAtLeast(f.severity, 'medium'));
     expect(elevated).toEqual([]);
+  });
+});
+
+/**
+ * The `known-malware` rule blocks by exact name@version, so its only false-
+ * positive mode is a blocklist entry that wrongly covers a legitimate package
+ * — most dangerously an "all-versions" entry whose name is a popular package.
+ * These guards run against the *real* bundled `data/blocklist.json`.
+ */
+describe('known-malware blocklist false-positive guard', () => {
+  const feed = loadBundledThreatFeed();
+  const popular = new Set(names.map((n) => n.toLowerCase()));
+
+  it('never blocks every version of a popular package', () => {
+    const collisions = [...feed.blocklist.values()]
+      .filter((entry) => !entry.versions || entry.versions.length === 0)
+      .map((entry) => entry.name)
+      .filter((name) => popular.has(name));
+    expect(collisions).toEqual([]);
+  });
+
+  it('emits no findings on the popular corpus', async () => {
+    const corpusCtx = makeContext({
+      dependencies,
+      services: {
+        cache: makeContext().services.cache,
+        osv: makeContext().services.osv,
+        registry: makeContext().services.registry,
+        threatFeed: feed,
+      },
+    });
+    expect(await knownMalwareRule.run(corpusCtx)).toEqual([]);
   });
 });

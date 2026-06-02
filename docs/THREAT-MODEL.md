@@ -62,10 +62,12 @@ analysed on the developer machine or inside the CI container.
 The make-or-break property of a gate is that it cannot be quietly switched off.
 Guard enforces this in several layers:
 
-- **Non-suppressible rules.** `self-integrity` is marked non-suppressible. The
-  rule runner refuses to disable it via `rules.<id>.enabled`, refuses to lower
-  its severity via `rules.<id>.severity`, and the `ignores` list cannot silence
-  its findings.
+- **Non-suppressible rules.** `self-integrity` and `known-malware` are marked
+  non-suppressible. The rule runner refuses to disable them via
+  `rules.<id>.enabled`, refuses to lower their severity via `rules.<id>.severity`,
+  and the `ignores` list cannot silence their findings. (`known-malware` is an
+  exact `name@version` blocklist match — confirmed malware in the tree, not a
+  risk to weigh.)
 - **Tampering is reported, not just blocked.** Any config that *attempts* to
   disable, downgrade, or ignore a non-suppressible rule produces a `critical`
   `self-integrity` finding. The attempt is visible in the report.
