@@ -8,11 +8,13 @@
 
 ## What it catches
 
-Configuration that attempts to weaken Guard's own protections:
+Configuration that attempts to weaken Guard's own protections. The protected,
+non-suppressible rules are `self-integrity` itself and
+[`known-malware`](./known-malware.md). For either one, this rule reports:
 
-- Disabling a non-suppressible rule (`rules.self-integrity.enabled = false`)
-- Lowering a non-suppressible rule's severity (`rules.self-integrity.severity = "low"`)
-- Ignoring a non-suppressible rule via the `ignores` list
+- Disabling it (`rules.<id>.enabled = false`)
+- Lowering its severity (`rules.<id>.severity = "low"`)
+- Ignoring it via the `ignores` list
 
 This is the make-or-break property of a security gate: a tampered Guard must
 not be able to report a clean run.

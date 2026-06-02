@@ -8,6 +8,7 @@ import { dependencyConfusionRule } from './rules/dependency-confusion.js';
 import { gitDepRule } from './rules/git-dep.js';
 import { installScriptsRule } from './rules/install-scripts.js';
 import { integrityRule } from './rules/integrity.js';
+import { knownMalwareRule } from './rules/known-malware.js';
 import { maintainerRule } from './rules/maintainer.js';
 import { manifestConfusionRule } from './rules/manifest-confusion.js';
 import { manifestTamperingRule } from './rules/manifest-tampering.js';
@@ -51,6 +52,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
 export function dependencyRuleCatalog(): DependencyRule[] {
   return [
     selfIntegrityRule,
+    knownMalwareRule,
     installScriptsRule,
     integrityRule,
     gitDepRule,

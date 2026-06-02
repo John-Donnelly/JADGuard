@@ -28,6 +28,10 @@ export interface Report {
   threatFeed?: {
     generatedAt: string;
     popularCount: number;
+    /** Packages in the known-malware blocklist. */
+    blocklistCount: number;
+    /** ISO date the known-malware blocklist was generated. */
+    blocklistGeneratedAt: string;
     source: string;
   };
   startedAt: string;

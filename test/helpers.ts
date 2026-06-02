@@ -15,7 +15,7 @@ import type {
   TarballClient,
   TarballFile,
 } from '../src/integrations/tarball.js';
-import type { ThreatFeed } from '../src/integrations/threat-feed.js';
+import type { BlocklistEntry, ThreatFeed } from '../src/integrations/threat-feed.js';
 
 /** A registry client that returns canned packument-derived data. */
 export function stubRegistry(
@@ -103,12 +103,25 @@ export function buildExtracted(
   return { files, rejected: [] };
 }
 
-/** A `ThreatFeed` populated from a hand-supplied popular-name list. */
-export function stubThreatFeed(popularNames: readonly string[]): ThreatFeed {
+/**
+ * A `ThreatFeed` populated from a hand-supplied popular-name list and an
+ * optional known-malware blocklist.
+ */
+export function stubThreatFeed(
+  popularNames: readonly string[],
+  blocklistEntries: readonly BlocklistEntry[] = [],
+): ThreatFeed {
+  const blocklist = new Map<string, BlocklistEntry>();
+  for (const entry of blocklistEntries) {
+    blocklist.set(entry.name.toLowerCase(), { ...entry, name: entry.name.toLowerCase() });
+  }
   return {
     popularPackages: new Set(popularNames.map((n) => n.toLowerCase())),
+    blocklist,
     generatedAt: '2026-05-23',
     popularCount: popularNames.length,
+    blocklistCount: blocklist.size,
+    blocklistGeneratedAt: '2026-05-23',
     source: 'test stub',
   };
 }

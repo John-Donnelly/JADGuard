@@ -23,6 +23,7 @@ never exit the process — the verdict engine owns exit codes.
 | Rule                                           | Default  | What it catches                                                          |
 | ---------------------------------------------- | -------- | ------------------------------------------------------------------------ |
 | [`self-integrity`](./self-integrity.md)        | critical | Configuration that attempts to disable Guard's own protections.          |
+| [`known-malware`](./known-malware.md)          | critical | Exact `name@version` match against the curated known-malware blocklist.   |
 | [`install-scripts`](./install-scripts.md)      | high\*   | Dependencies that declare install/lifecycle scripts.                     |
 | `integrity`                                    | medium   | Registry deps missing or weakly pinned by integrity hash.                |
 | `git-dep`                                      | medium   | Dependencies resolved from git rather than the public registry.          |
