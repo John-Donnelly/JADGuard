@@ -15,7 +15,8 @@ describe('parseConfig', () => {
     const config = parseConfig({}, 'test');
     expect(config.mode).toBe('enforce');
     expect(config.failOn).toBe('high');
-    expect(config.cooldownDays).toBe(14);
+    expect(config.cooldownDays).toBe(7);
+    expect(config.cooldown.exclude).toEqual([]);
     expect(config.registry).toBe('https://registry.npmjs.org');
   });
 
@@ -39,6 +40,30 @@ describe('parseConfig', () => {
     expect(config.rules.cooldown?.enabled).toBe(false);
     expect(config.rules.integrity?.severity).toBe('high');
     expect(config.ignores).toHaveLength(1);
+  });
+
+  it('parses cooldown.days and cooldown.exclude', () => {
+    const config = parseConfig(
+      { cooldown: { days: 3, exclude: ['@myscope/*', 'internal-*'] } },
+      'test',
+    );
+    expect(config.cooldownDays).toBe(3);
+    expect(config.cooldown.exclude).toEqual(['@myscope/*', 'internal-*']);
+  });
+
+  it('lets cooldown.days override the legacy cooldownDays', () => {
+    const config = parseConfig({ cooldownDays: 14, cooldown: { days: 5 } }, 'test');
+    expect(config.cooldownDays).toBe(5);
+  });
+
+  it('rejects a non-array cooldown.exclude', () => {
+    expect(() => parseConfig({ cooldown: { exclude: 'nope' } }, 'test')).toThrow(
+      /cooldown\.exclude/,
+    );
+  });
+
+  it('rejects a negative cooldown.days', () => {
+    expect(() => parseConfig({ cooldown: { days: -1 } }, 'test')).toThrow(/cooldown\.days/);
   });
 
   it('rejects an invalid mode', () => {

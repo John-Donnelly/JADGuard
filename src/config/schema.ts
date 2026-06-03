@@ -11,6 +11,17 @@ export interface RuleConfig {
   severity?: Severity;
 }
 
+/** Configuration for the time-gate (`cooldown` rule). */
+export interface CooldownConfig {
+  /**
+   * Package name patterns that bypass the cooldown window. Supports exact
+   * names, `*` globs, and scopes (`@myscope/*`, `internal-*`). First-party and
+   * internal packages you control do not need the soak the gate exists to give
+   * third-party releases — the exclusion npm's native cooldown lacks.
+   */
+  exclude: string[];
+}
+
 /** Configuration for the AST code-gate rules. */
 export interface CodeGateConfig {
   /**
@@ -34,6 +45,8 @@ export interface GuardConfig {
   ignores: IgnoreRule[];
   /** Cooldown window, in days, for the `cooldown` rule. */
   cooldownDays: number;
+  /** Time-gate configuration (cooldown exclusions). */
+  cooldown: CooldownConfig;
   /** Registry base URL used by the `cooldown` rule. */
   registry: string;
   /**
@@ -51,7 +64,8 @@ export const DEFAULT_CONFIG: GuardConfig = {
   onDegraded: 'fail',
   rules: {},
   ignores: [],
-  cooldownDays: 14,
+  cooldownDays: 7,
+  cooldown: { exclude: [] },
   registry: 'https://registry.npmjs.org',
   experimental: {},
   codeGate: { enabled: false },
@@ -128,6 +142,7 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
     ...DEFAULT_CONFIG,
     rules: {},
     ignores: [],
+    cooldown: { exclude: [] },
     experimental: {},
     codeGate: { enabled: false },
   };
@@ -151,6 +166,24 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
       fail(source, 'cooldownDays must be a non-negative number');
     }
     config.cooldownDays = days;
+  }
+  if (obj.cooldown !== undefined) {
+    const cooldown = asObject(obj.cooldown, source, 'cooldown');
+    // `cooldown.days` is the canonical home; it overrides the legacy top-level
+    // `cooldownDays` when both are present.
+    if (cooldown.days !== undefined) {
+      const days = cooldown.days;
+      if (typeof days !== 'number' || !Number.isFinite(days) || days < 0) {
+        fail(source, 'cooldown.days must be a non-negative number');
+      }
+      config.cooldownDays = days;
+    }
+    if (cooldown.exclude !== undefined) {
+      if (!Array.isArray(cooldown.exclude)) fail(source, 'cooldown.exclude must be an array');
+      config.cooldown.exclude = cooldown.exclude.map((value, index) =>
+        asString(value, source, `cooldown.exclude[${index}]`),
+      );
+    }
   }
   if (obj.registry !== undefined) {
     const registry = asString(obj.registry, source, 'registry');
