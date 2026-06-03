@@ -19,6 +19,30 @@ export interface LockfilePackage {
   dev?: boolean;
   /** Resolves outside the public registry (git, file, link, patch, workspace). */
   external?: boolean;
+  /**
+   * Names of the packages this one depends on — its `dependencies` plus
+   * `optionalDependencies`, sorted and de-duplicated. Absent when the package
+   * declares none or the format does not record edges. Powers the dependency
+   * graph the reachability triage walks (Phase 14).
+   */
+  dependencies?: string[];
+}
+
+/**
+ * Collects sorted, de-duplicated dependency names from one or more of a
+ * lockfile entry's dependency maps (`dependencies`, `optionalDependencies`,
+ * `requires`). Non-object inputs are ignored, so callers can pass raw `unknown`
+ * fields straight from the parsed lockfile.
+ */
+export function dependencyNames(...maps: unknown[]): string[] {
+  const names = new Set<string>();
+  for (const map of maps) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    for (const key of Object.keys(map as Record<string, unknown>)) {
+      if (key) names.add(key);
+    }
+  }
+  return [...names].sort();
 }
 
 /** What a lockfile format is structurally capable of telling Guard. */

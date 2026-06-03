@@ -2,6 +2,7 @@ import { LockfileError } from '../../../util/errors.js';
 import { stripBom } from '../../../util/text.js';
 import {
   dedupePackages,
+  dependencyNames,
   isExternalResolved,
   type LockfilePackage,
   type ParsedLockfile,
@@ -24,6 +25,8 @@ function collectV1(deps: Record<string, unknown>, out: LockfilePackage[]): void 
     const version = typeof entry.version === 'string' ? entry.version : undefined;
     if (version) {
       const resolved = typeof entry.resolved === 'string' ? entry.resolved : undefined;
+      // v1 records edges as `requires` (name -> range) on each node.
+      const deps = dependencyNames(entry.requires);
       out.push({
         name,
         version,
@@ -31,6 +34,7 @@ function collectV1(deps: Record<string, unknown>, out: LockfilePackage[]): void 
         resolved,
         dev: entry.dev === true,
         external: isExternalResolved(resolved),
+        ...(deps.length > 0 ? { dependencies: deps } : {}),
       });
     }
     if (entry.dependencies && typeof entry.dependencies === 'object') {
@@ -67,6 +71,7 @@ export function parseNpmLockfile(content: string, path: string): ParsedLockfile 
       const version = typeof entry.version === 'string' ? entry.version : undefined;
       if (!version) continue;
       const resolved = typeof entry.resolved === 'string' ? entry.resolved : undefined;
+      const deps = dependencyNames(entry.dependencies, entry.optionalDependencies);
       packages.push({
         name,
         version,
@@ -75,6 +80,7 @@ export function parseNpmLockfile(content: string, path: string): ParsedLockfile 
         hasInstallScript: entry.hasInstallScript === true,
         dev: entry.dev === true,
         external: entry.link === true || isExternalResolved(resolved),
+        ...(deps.length > 0 ? { dependencies: deps } : {}),
       });
     }
     return {
