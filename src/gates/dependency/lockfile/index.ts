@@ -15,3 +15,8 @@ export {
   loadLockfile,
   type LoadLockfileResult,
 } from './detect.js';
+export {
+  buildDependencyGraph,
+  reachableFrom,
+  type DependencyGraph,
+} from './graph.js';

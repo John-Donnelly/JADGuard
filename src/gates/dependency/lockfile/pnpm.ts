@@ -1,7 +1,12 @@
 import { parse as parseYaml } from 'yaml';
 import { LockfileError } from '../../../util/errors.js';
 import { stripBom } from '../../../util/text.js';
-import { dedupePackages, type LockfilePackage, type ParsedLockfile } from './types.js';
+import {
+  dedupePackages,
+  dependencyNames,
+  type LockfilePackage,
+  type ParsedLockfile,
+} from './types.js';
 
 /**
  * Renders a pnpm `resolution` block into a single `resolved` source string.
@@ -64,6 +69,27 @@ export function parsePnpmLockfile(content: string, path: string): ParsedLockfile
         ? Number.parseFloat(rawVersion)
         : undefined;
 
+  // Dependency edges live on the `packages` entries in lockfile v6 and move to
+  // a sibling `snapshots` section in v9. Collect from both, keyed by the
+  // peer-stripped `name@version`, so the graph is populated either way.
+  const edgesByKey = new Map<string, string[]>();
+  const collectEdges = (source: unknown): void => {
+    if (!source || typeof source !== 'object') return;
+    for (const [key, value] of Object.entries(source as Record<string, unknown>)) {
+      if (!value || typeof value !== 'object') continue;
+      const split = splitPnpmKey(key);
+      if (!split) continue;
+      const entry = value as Record<string, unknown>;
+      const names = dependencyNames(entry.dependencies, entry.optionalDependencies);
+      if (names.length === 0) continue;
+      const mapKey = `${split.name}@${split.version}`;
+      const prev = edgesByKey.get(mapKey);
+      edgesByKey.set(mapKey, prev ? [...new Set([...prev, ...names])].sort() : names);
+    }
+  };
+  collectEdges(root.packages);
+  collectEdges(root.snapshots);
+
   const packages: LockfilePackage[] = [];
   if (root.packages && typeof root.packages === 'object') {
     for (const [key, value] of Object.entries(root.packages as Record<string, unknown>)) {
@@ -77,6 +103,7 @@ export function parsePnpmLockfile(content: string, path: string): ParsedLockfile
           : {};
       const integrity =
         typeof resolution.integrity === 'string' ? resolution.integrity : undefined;
+      const deps = edgesByKey.get(`${split.name}@${split.version}`);
       packages.push({
         name: split.name,
         version: split.version,
@@ -87,6 +114,7 @@ export function parsePnpmLockfile(content: string, path: string): ParsedLockfile
         // A registry tarball always carries an integrity hash; its absence
         // means a git/file/directory source.
         external: integrity === undefined,
+        ...(deps && deps.length > 0 ? { dependencies: deps } : {}),
       });
     }
   }
