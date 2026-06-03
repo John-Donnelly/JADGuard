@@ -262,6 +262,51 @@ describe('cooldown rule', () => {
     });
     await expect(cooldownRule.run(ctx)).rejects.toThrow();
   });
+
+  it('skips a package matched by a scoped cooldown.exclude glob', async () => {
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: '@myscope/fresh', version: '2.0.0' })],
+      config: { ...DEFAULT_CONFIG, cooldown: { exclude: ['@myscope/*'] } },
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({ '@myscope/fresh@2.0.0': '2026-05-19T00:00:00.000Z' }),
+      },
+    });
+    expect(await cooldownRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('skips packages matched by a prefix glob or an exact name', async () => {
+    const ctx = makeContext({
+      dependencies: [
+        makeDep({ name: 'internal-tools', version: '2.0.0' }),
+        makeDep({ name: 'vendored', version: '9.9.9' }),
+      ],
+      config: { ...DEFAULT_CONFIG, cooldown: { exclude: ['internal-*', 'vendored'] } },
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({
+          'internal-tools@2.0.0': '2026-05-19T00:00:00.000Z',
+          'vendored@9.9.9': '2026-05-19T00:00:00.000Z',
+        }),
+      },
+    });
+    expect(await cooldownRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('still flags a recent package that matches no exclusion', async () => {
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'other-pkg', version: '2.0.0' })],
+      config: { ...DEFAULT_CONFIG, cooldown: { exclude: ['@myscope/*', 'internal-*'] } },
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({ 'other-pkg@2.0.0': '2026-05-19T00:00:00.000Z' }),
+      },
+    });
+    expect(await cooldownRule.run(ctx)).toHaveLength(1);
+  });
 });
 
 describe('provenance rule', () => {
