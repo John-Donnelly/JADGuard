@@ -3,18 +3,22 @@ import { scanSource } from '../../../integrations/code-scan.js';
 import type { DependencyRule } from '../../dependency/types.js';
 import { gatherScannableFiles } from '../scope.js';
 
-/** `require('node:http')` / `from 'http'` etc. */
-const NET_MODULE_IMPORT =
+/**
+ * `require('node:http')` / `from 'http'` etc. Exported (with the other
+ * detection patterns) so the capability summary in `capabilities.ts` reuses
+ * the exact same network detection — keep them as the single source of truth.
+ */
+export const NET_MODULE_IMPORT =
   /(?:require\s*\(\s*['"]|from\s+['"])(?:node:)?https?['"]/;
 /** `http.request(...)` / `https.get(...)` etc. */
-const NET_MODULE_CALL =
+export const NET_MODULE_CALL =
   /\bhttps?\.(?:request|get|post|put|patch|delete|head)\s*\(/;
 
 /** Common HTTP client libraries that wrap outbound HTTP. */
-const HTTP_LIB_IMPORT =
+export const HTTP_LIB_IMPORT =
   /(?:require\s*\(\s*['"]|from\s+['"])(?:axios|got|node-fetch|undici|cross-fetch|isomorphic-fetch|superagent|request|phin)['"]/;
 /** `axios(...)`, `axios.get(...)`, `got(...)`, `undici.fetch(...)`, etc. */
-const HTTP_LIB_USE =
+export const HTTP_LIB_USE =
   /\b(?:axios|got|undici|superagent|phin)\s*(?:\.[a-zA-Z]+\s*)?\(/;
 
 interface NetworkHit {

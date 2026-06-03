@@ -8,15 +8,19 @@ const SENSITIVE_NAMES =
   '(?:NPM_TOKEN|GITHUB_TOKEN|GH_TOKEN|VAULT_TOKEN|CI_JOB_TOKEN|CIRCLE_TOKEN|HF_TOKEN|HUGGINGFACE_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY' +
   '|AWS_[A-Z0-9_]+|VAULT_[A-Z0-9_]+|AZURE_[A-Z0-9_]+|GCP_[A-Z0-9_]+|GOOGLE_[A-Z0-9_]+|DO_[A-Z0-9_]+)';
 
-/** `process.env.NAME` — sensitive-suffix form. */
-const ENV_DOT = new RegExp(`\\bprocess\\.env\\.${SENSITIVE_NAMES}\\b`);
+/**
+ * `process.env.NAME` — sensitive-suffix form. Exported (with the other
+ * secret-access patterns) so `capabilities.ts` reuses the exact same
+ * env-secret detection — keep them as the single source of truth.
+ */
+export const ENV_DOT = new RegExp(`\\bprocess\\.env\\.${SENSITIVE_NAMES}\\b`);
 /** `process.env["NAME"]` / `['NAME']` — bracket form. */
-const ENV_BRACKET = new RegExp(
+export const ENV_BRACKET = new RegExp(
   `\\bprocess\\.env\\s*\\[\\s*['"\\\`]${SENSITIVE_NAMES}['"\\\`]`,
 );
 
 /** Filesystem paths that store credentials on the host. */
-const SENSITIVE_PATH =
+export const SENSITIVE_PATH =
   /(?:\.npmrc\b|\.ssh\/[^"\s]+|\.aws\/credentials\b|\.aws\/config\b|\.kube\/config\b|\.git\/config\b|\.docker\/config\.json\b|\.gnupg\/[^"\s]+|\.config\/gcloud\/[^"\s]+|application_default_credentials\.json\b|id_rsa\b|id_ed25519\b)/;
 
 /**
@@ -24,10 +28,10 @@ const SENSITIVE_PATH =
  * IP and the GCP metadata host. The Shai-Hulud worm reads role credentials
  * straight from IMDS.
  */
-const CLOUD_IMDS = /169\.254\.169\.254|metadata\.google\.internal/;
+export const CLOUD_IMDS = /169\.254\.169\.254|metadata\.google\.internal/;
 
 /** TruffleHog — the secret scanner the worm downloads to harvest credentials. */
-const SECRET_SCANNER = /\btrufflehog\b/i;
+export const SECRET_SCANNER = /\btrufflehog\b/i;
 
 interface SecretHit {
   file: string;

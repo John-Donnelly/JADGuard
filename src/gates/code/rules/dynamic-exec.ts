@@ -11,9 +11,10 @@ interface DynamicExecPattern {
 /**
  * Patterns for dynamic-evaluation primitives. The negative lookbehind on
  * `[.$\w]` keeps method calls (`obj.eval(...)`) and word-extended names
- * (`isEval(...)`) from matching as standalone `eval(...)`.
+ * (`isEval(...)`) from matching as standalone `eval(...)`. Exported so
+ * `capabilities.ts` reuses the exact same detection — single source of truth.
  */
-const PATTERNS: readonly DynamicExecPattern[] = [
+export const DYNAMIC_EXEC_PATTERNS: readonly DynamicExecPattern[] = [
   { pattern: /(?<![.$\w])eval\s*\(/, name: 'eval(...)' },
   { pattern: /(?<![.$\w])new\s+Function\s*\(/, name: 'new Function(...)' },
   { pattern: /(?<![$\w])vm\.runInThisContext\s*\(/, name: 'vm.runInThisContext(...)' },
@@ -47,7 +48,7 @@ export const dynamicExecRule: DependencyRule = {
       const hits: Array<{ file: string; pattern: string }> = [];
       for (const file of files) {
         const { code } = scanSource(file.content);
-        for (const { pattern, name } of PATTERNS) {
+        for (const { pattern, name } of DYNAMIC_EXEC_PATTERNS) {
           if (pattern.test(code)) hits.push({ file: file.path, pattern: name });
         }
       }
