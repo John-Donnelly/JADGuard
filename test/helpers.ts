@@ -176,7 +176,7 @@ const EMPTY_LOCKFILE: ParsedLockfile = {
   kind: 'npm',
   path: '/project/package-lock.json',
   packages: [],
-  capabilities: { installScripts: true, integrity: true },
+  capabilities: { installScripts: true, integrity: true, dependencyEdges: true },
 };
 
 /** Builds a `DependencyGateContext` with sensible defaults for rule tests. */
