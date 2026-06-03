@@ -4,6 +4,7 @@ import { isAbsolute, resolve } from 'node:path';
 import {
   runAdd,
   runAllow,
+  runHarden,
   runInit,
   runInstall,
   runScan,
@@ -30,6 +31,7 @@ Commands:
   install             Install dependencies, running lifecycle scripts only for allowlisted packages
   add <pkg>...        Gate package(s) against the known-malware blocklist, then add them
   allow               Manage the install allowlist (allow.json)
+  harden              Print registry-native cooldown + script-lockdown config for your package manager
 
 Options:
   --dir <path>          Project directory (default: current directory)
@@ -230,6 +232,8 @@ async function main(argv: string[]): Promise<number> {
       return runAddCommand(args, dir);
     case 'allow':
       return runAllowCommand(args, dir);
+    case 'harden':
+      return runHardenCommand(args, dir);
     default:
       throw new UsageError(`unknown command: ${command}`);
   }
@@ -292,6 +296,27 @@ async function runAddCommand(args: ParsedArgs, dir: string): Promise<number> {
     `${dryRun ? 'Would run' : 'Ran'}: ${result.addCommand}\n` +
       'Gate: no known-malware match. Run `jadguard install` for allowlisted-script safety.\n',
   );
+  return 0;
+}
+
+async function runHardenCommand(args: ParsedArgs, dir: string): Promise<number> {
+  const configPath = args.values.get('--config');
+  const result = await runHarden({ dir, ...(configPath ? { configPath } : {}) });
+
+  const lines: string[] = [
+    `JAD Apps Guard — hardening for ${result.packageManager} ` +
+      `(cooldown: ${result.cooldownDays} day${result.cooldownDays === 1 ? '' : 's'})`,
+    '',
+    'Add the following to your project — review before saving; Guard does not write these files:',
+  ];
+  for (const f of result.files) {
+    lines.push('', `# ${f.filename}`, f.contents.replace(/\n+$/, ''));
+  }
+  if (result.notes.length > 0) {
+    lines.push('', 'Notes:');
+    for (const note of result.notes) lines.push(`  · ${note}`);
+  }
+  process.stdout.write(`${lines.join('\n')}\n`);
   return 0;
 }
 

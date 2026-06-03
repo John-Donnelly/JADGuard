@@ -7,7 +7,7 @@ const STARTER_CONFIG = `{
   "mode": "enforce",
   "failOn": "high",
   "onDegraded": "fail",
-  "cooldownDays": 14,
+  "cooldown": { "days": 7, "exclude": [] },
   "rules": {},
   "ignores": []
 }

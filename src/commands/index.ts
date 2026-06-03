@@ -15,3 +15,5 @@ export { runInstall } from './install.js';
 export type { InstallOptions, InstallResult } from './install.js';
 export { runAdd, parseSpec } from './add.js';
 export type { AddOptions, AddResult, AddBlock } from './add.js';
+export { runHarden } from './harden.js';
+export type { HardenOptions, HardenResult, HardenFile } from './harden.js';
