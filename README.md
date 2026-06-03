@@ -150,6 +150,20 @@ Or in config:
 | `network-exfil`   | medium                | Outbound HTTP imports paired with calls (http/https or axios/got/undici/…).    |
 | `ci-tampering`    | medium                | CI workflow paths (or `.claude/settings.json`) + fs write, `git push`, `toJSON(secrets)`, or `pull_request_target`. |
 | `code-gate-chain` | **high** / **critical** | ≥2 of the above in the same file (`high`); ≥3 (`critical`). Synthetic, emitted by the chain detector. |
+| `capability-diff` | medium / high / **critical** | An **update** that introduces a capability (network / process / filesystem / env-secret / dynamic-exec) the prior version lacked. **Experimental, `scan`-only, opt-in.**\*\*\*\* |
+
+\*\*\*\* `capability-diff` is gated behind `experimental.capabilityDiff: true` and
+only runs on `scan` (it diffs each changed dependency against its pre-update
+version from the git baseline — `audit` has no baseline). Fewer than 2% of
+version bumps introduce a new capability, so an unexpected one is a strong,
+low-noise malicious-update signal; severity scales with the shape of the added
+capabilities (a new credential read paired with a new outbound or subprocess
+channel is the exfiltration kill-chain in a single bump → `critical`). Enable it
+with both the code gate and the flag:
+
+```json
+{ "codeGate": { "enabled": true }, "experimental": { "capabilityDiff": true } }
+```
 
 The chain detector groups individual code-gate findings by `(package, file)`
 and emits a synthetic `code-gate-chain` finding whenever ≥2 distinct rules

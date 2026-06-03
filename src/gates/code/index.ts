@@ -1,4 +1,5 @@
 import type { DependencyRule } from '../dependency/types.js';
+import { capabilityDiffRule } from './rules/capability-diff.js';
 import { ciTamperingRule } from './rules/ci-tampering.js';
 import { dynamicExecRule } from './rules/dynamic-exec.js';
 import { knownIocRule } from './rules/known-ioc.js';
@@ -32,7 +33,10 @@ export const CODE_RULE_IDS: ReadonlySet<string> = new Set([
  * adds `known-ioc` — exact campaign-IOC matching (file hash, dropper name,
  * payload string), the code-gate counterpart to the dependency gate's
  * `known-malware` — and sharpens the behavioural rules with the documented
- * 2025–26 Shai-Hulud / chalk-debug / s1ngularity indicators.
+ * 2025–26 Shai-Hulud / chalk-debug / s1ngularity indicators. Phase 12 adds
+ * `capability-diff` — the experimental, `scan`-only version-to-version
+ * capability delta (a new capability in an update is the low-noise
+ * malicious-update signal).
  */
 export function codeRuleCatalog(): CodeRule[] {
   return [
@@ -43,5 +47,6 @@ export function codeRuleCatalog(): CodeRule[] {
     secretAccessRule,
     networkExfilRule,
     ciTamperingRule,
+    capabilityDiffRule,
   ];
 }
