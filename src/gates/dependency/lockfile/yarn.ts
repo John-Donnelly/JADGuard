@@ -3,6 +3,7 @@ import { LockfileError } from '../../../util/errors.js';
 import { stripBom } from '../../../util/text.js';
 import {
   dedupePackages,
+  dependencyNames,
   isExternalResolved,
   type LockfilePackage,
   type ParsedLockfile,
@@ -38,12 +39,14 @@ function parseClassic(parsed: Record<string, unknown>, path: string): ParsedLock
     const name = nameFromDescriptor(first);
     if (!name) continue;
     const resolved = typeof entry.resolved === 'string' ? entry.resolved : undefined;
+    const deps = dependencyNames(entry.dependencies, entry.optionalDependencies);
     packages.push({
       name,
       version,
       integrity: typeof entry.integrity === 'string' ? entry.integrity : undefined,
       resolved,
       external: isExternalResolved(resolved),
+      ...(deps.length > 0 ? { dependencies: deps } : {}),
     });
   }
   return {
@@ -73,6 +76,7 @@ function parseBerry(parsed: Record<string, unknown>, path: string): ParsedLockfi
     if (!parsedRes) continue;
     // Skip the project's own workspace packages — they are not dependencies.
     if (parsedRes.protocol === 'workspace') continue;
+    const deps = dependencyNames(entry.dependencies, entry.optionalDependencies);
     packages.push({
       name: parsedRes.name,
       version,
@@ -80,6 +84,7 @@ function parseBerry(parsed: Record<string, unknown>, path: string): ParsedLockfi
       // Berry records a `checksum` that is not a portable SRI hash, so the
       // integrity rule treats the format as not recording integrity.
       external: parsedRes.protocol !== 'npm',
+      ...(deps.length > 0 ? { dependencies: deps } : {}),
     });
   }
   return {

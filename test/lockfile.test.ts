@@ -25,6 +25,8 @@ describe('parseNpmLockfile', () => {
           version: '4.17.21',
           resolved: 'https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz',
           integrity: 'sha512-abc',
+          dependencies: { ms: '^2.0.0' },
+          optionalDependencies: { fsevents: '^2.0.0' },
         },
         'node_modules/esbuild': {
           version: '0.20.0',
@@ -51,6 +53,11 @@ describe('parseNpmLockfile', () => {
     expect(parsed.packages.find((p) => p.name === 'esbuild')?.hasInstallScript).toBe(true);
     expect(parsed.packages.find((p) => p.name === 'gitdep')?.external).toBe(true);
     expect(parsed.packages.find((p) => p.name === 'lodash')?.external).toBe(false);
+    // dependencies ∪ optionalDependencies, sorted.
+    expect(parsed.packages.find((p) => p.name === 'lodash')?.dependencies).toEqual([
+      'fsevents',
+      'ms',
+    ]);
   });
 
   it('parses a legacy lockfileVersion 1 dependency tree', () => {
@@ -62,6 +69,7 @@ describe('parseNpmLockfile', () => {
           version: '5.0.0',
           resolved: 'https://registry.npmjs.org/chalk/-/chalk-5.0.0.tgz',
           integrity: 'sha512-x',
+          requires: { nested: '^1.0.0' },
           dependencies: {
             nested: {
               version: '1.0.0',
@@ -75,6 +83,8 @@ describe('parseNpmLockfile', () => {
     const parsed = parseNpmLockfile(content, 'package-lock.json');
     expect(parsed.capabilities.installScripts).toBe(false);
     expect(parsed.packages.map((p) => p.name).sort()).toEqual(['chalk', 'nested']);
+    // v1 records edges as `requires`.
+    expect(parsed.packages.find((p) => p.name === 'chalk')?.dependencies).toEqual(['nested']);
   });
 
   it('throws on invalid JSON', () => {
@@ -110,6 +120,11 @@ describe('parsePnpmLockfile', () => {
       '  gitdep@2.0.0:',
       '    resolution: {tarball: file:vendor/gitdep.tgz}',
       '',
+      'snapshots:',
+      '  lodash@4.17.21:',
+      '    dependencies:',
+      '      ms: 2.1.3',
+      '',
     ].join('\n');
     const parsed = parsePnpmLockfile(content, 'pnpm-lock.yaml');
     expect(parsed.kind).toBe('pnpm');
@@ -117,6 +132,8 @@ describe('parsePnpmLockfile', () => {
     expect(parsed.packages.find((p) => p.name === 'esbuild')?.hasInstallScript).toBe(true);
     expect(parsed.packages.find((p) => p.name === 'gitdep')?.external).toBe(true);
     expect(parsed.packages.find((p) => p.name === 'lodash')?.external).toBe(false);
+    // Edges live in the v9 `snapshots` section.
+    expect(parsed.packages.find((p) => p.name === 'lodash')?.dependencies).toEqual(['ms']);
   });
 
   it('renders a git resolution into a parseable `resolved` string', () => {
@@ -148,6 +165,8 @@ describe('parseYarnLockfile', () => {
       '  version "4.17.21"',
       '  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#abc"',
       '  integrity sha512-abc',
+      '  dependencies:',
+      '    ms "^2.0.0"',
       '',
       '"@scope/pkg@^1.0.0":',
       '  version "1.0.0"',
@@ -160,6 +179,7 @@ describe('parseYarnLockfile', () => {
     expect(parsed.capabilities.integrity).toBe(true);
     expect(parsed.packages.map((p) => p.name).sort()).toEqual(['@scope/pkg', 'lodash']);
     expect(parsed.packages.find((p) => p.name === 'lodash')?.version).toBe('4.17.21');
+    expect(parsed.packages.find((p) => p.name === 'lodash')?.dependencies).toEqual(['ms']);
   });
 
   it('parses a berry lockfile and skips workspace entries', () => {
@@ -199,7 +219,7 @@ describe('parseBunLockfile', () => {
       '    "": { "name": "demo", "dependencies": { "lodash": "^4.17.21" }, },',
       '  },',
       '  "packages": {',
-      '    "lodash": ["lodash@4.17.21", "", {}, "sha512-abc"],',
+      '    "lodash": ["lodash@4.17.21", "", { "dependencies": { "ms": "^2.0.0" } }, "sha512-abc"],',
       '    "@scope/pkg": ["@scope/pkg@1.0.0", "", {}, "sha512-ghi"],',
       '    "gitdep": ["gitdep@git+https://github.com/o/gitdep.git#abc", {}],',
       '  },',
@@ -214,6 +234,7 @@ describe('parseBunLockfile', () => {
       'lodash',
     ]);
     expect(parsed.packages.find((p) => p.name === 'lodash')?.version).toBe('4.17.21');
+    expect(parsed.packages.find((p) => p.name === 'lodash')?.dependencies).toEqual(['ms']);
     expect(parsed.packages.find((p) => p.name === 'lodash')?.external).toBe(false);
     expect(parsed.packages.find((p) => p.name === 'gitdep')?.external).toBe(true);
     expect(parsed.packages.find((p) => p.name === 'gitdep')?.resolved).toContain(
