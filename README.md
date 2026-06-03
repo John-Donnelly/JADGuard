@@ -34,6 +34,7 @@ jadguard verify-signatures   # run only the provenance rule (signature-or-fail)
 jadguard allow esbuild       # add esbuild to the install allowlist
 jadguard install             # gate the lockfile, then install with --ignore-scripts (allowlisted scripts only)
 jadguard add chalk           # gate chalk against the known-malware feed, then add it
+jadguard harden              # print registry-native cooldown + script-lockdown config for your PM
 ```
 
 `scan` is the fast pull-request check — it diffs the lockfile against git and
@@ -59,6 +60,15 @@ blocklist **before** handing off to your package manager (`npm install` /
 `node_modules`. A pinned spec (`jadguard add chalk@5.6.1`) gets an exact
 version check; the broader gate runs on the next `jadguard scan` / `audit`. For
 install-script safety, follow up with `jadguard install`.
+
+`harden` detects your package manager and prints copy-pasteable config that
+turns on the **registry-native** cooldown and lifecycle-script lockdown —
+`min-release-age` (npm), `minimumReleaseAge` (pnpm/bun), or `npmMinimalAgeGate`
+(yarn), each in its own key and unit — folding in your `cooldown.exclude`
+patterns where the manager supports an exclusion list. Guard configures the
+ecosystem's own defense rather than only duplicating it; Guard's `cooldown` rule
+stays the fail-closed enforcement floor (native gates are opt-in and bypassable).
+The command only prints — it never writes or clobbers files.
 
 ### Common options
 
@@ -201,7 +211,7 @@ Node.js project at all.
   "mode": "enforce",
   "failOn": "high",
   "onDegraded": "fail",
-  "cooldownDays": 14,
+  "cooldown": { "days": 7, "exclude": ["@myscope/*", "internal-*"] },
   "rules": {
     "cooldown": { "severity": "high" }
   },
@@ -213,6 +223,15 @@ Node.js project at all.
 
 - `onDegraded` is **fail-closed by default**: when a check cannot complete
   (registry or OSV unreachable), the verdict fails rather than skipping silently.
+- `cooldown.days` defaults to **7** — analysis of recent npm attacks put most
+  exploitation windows under a week. A cooldown is *necessary but not
+  sufficient*: drop to `3` for a more aggressive posture, or keep Guard's other
+  rules as the real backstop. The legacy top-level `cooldownDays` is still
+  honoured; `cooldown.days` wins if both are set.
+- `cooldown.exclude` lists name patterns (`*` globs, scopes) that bypass the
+  window — first-party and internal packages you control don't need the soak the
+  gate gives third-party releases. `jadguard harden` emits the matching
+  registry-native config.
 - `ignores` suppress *suppressible* findings only. Expired or unused ignores are
   reported as stale so the list cannot rot.
 

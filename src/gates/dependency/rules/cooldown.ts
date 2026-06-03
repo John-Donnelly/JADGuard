@@ -10,6 +10,15 @@ function formatAge(ageDays: number): string {
 }
 
 /**
+ * Compiles a name pattern into an anchored regex. Supports `*` wildcards
+ * (`@myscope/*`, `internal-*`); every other character is matched literally.
+ */
+function compileExcludePattern(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*');
+  return new RegExp(`^${escaped}$`);
+}
+
+/**
  * Flags dependency versions published inside the configured cooldown window.
  * Recent releases of otherwise-trusted packages are the exact vector of the
  * Shai-Hulud-class attacks Guard exists to catch: a maintainer account is
@@ -29,9 +38,15 @@ export const cooldownRule: DependencyRule = {
     const cooldownDays = ctx.config.cooldownDays;
     if (cooldownDays <= 0) return [];
 
+    // First-party / internal packages you control do not need the soak the
+    // cooldown gives third-party releases — the per-package exclusion npm's
+    // native gate lacks. Patterns are compiled once per run.
+    const excludePatterns = (ctx.config.cooldown?.exclude ?? []).map(compileExcludePattern);
+
     const findings: Finding[] = [];
     for (const dep of ctx.inScope) {
       if (dep.external) continue;
+      if (excludePatterns.some((re) => re.test(dep.name))) continue;
 
       const publishedAt = await ctx.services.registry.getPublishTime(dep.name, dep.version);
       if (!publishedAt) continue; // unknown publish time — do not guess

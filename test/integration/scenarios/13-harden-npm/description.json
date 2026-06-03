@@ -1,0 +1,4 @@
+{
+  "summary": "`jadguard harden` on a plain npm project prints copy-pasteable registry-native hardening config.",
+  "attack": "Defense-in-depth: rather than only reimplementing the cooldown, Guard emits the package manager's own `min-release-age=7` + `ignore-scripts=true` so the registry-native gate is turned on too. Guard's own cooldown rule stays the fail-closed floor."
+}
