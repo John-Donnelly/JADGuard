@@ -1,7 +1,12 @@
 import { LockfileError } from '../../../util/errors.js';
 import { parseJsonc } from '../../../util/jsonc.js';
 import { stripBom } from '../../../util/text.js';
-import { dedupePackages, type LockfilePackage, type ParsedLockfile } from './types.js';
+import {
+  dedupePackages,
+  dependencyNames,
+  type LockfilePackage,
+  type ParsedLockfile,
+} from './types.js';
 
 /** Recognises a subresource-integrity string in a lockfile tuple. */
 const SRI_PREFIX = /^sha(?:512|384|256|1)-/i;
@@ -52,13 +57,19 @@ export function parseBunLockfile(content: string, path: string): ParsedLockfile 
       if (!split) continue;
 
       let integrity: string | undefined;
+      let meta: Record<string, unknown> | undefined;
       for (let i = 1; i < value.length; i++) {
         const element = value[i];
         if (typeof element === 'string' && SRI_PREFIX.test(element)) {
-          integrity = element;
-          break;
+          integrity = integrity ?? element;
+        } else if (element && typeof element === 'object' && !Array.isArray(element)) {
+          // The tuple's metadata object carries the dependency maps.
+          meta = meta ?? (element as Record<string, unknown>);
         }
       }
+      const deps = meta
+        ? dependencyNames(meta.dependencies, meta.optionalDependencies)
+        : [];
 
       packages.push({
         name: split.name,
@@ -71,6 +82,7 @@ export function parseBunLockfile(content: string, path: string): ParsedLockfile 
         // A registry package always records an integrity hash; its absence
         // means a git/file/workspace source.
         external: integrity === undefined,
+        ...(deps.length > 0 ? { dependencies: deps } : {}),
       });
     }
   }
