@@ -58,6 +58,7 @@ never exit the process — the verdict engine owns exit codes.
 | `network-exfil`                              | medium                 | Outbound HTTP imports paired with calls.                                       |
 | `ci-tampering`                               | medium                 | CI workflow paths (or `.claude/settings.json`) + fs write, `git push`, `toJSON(secrets)`, `pull_request_target`. |
 | [`code-gate-chain`](./code-gate-chain.md)    | **high** / **critical** | ≥2 code-gate rules co-occur in the same file (high); ≥3 (critical).            |
+| [`capability-diff`](./capability-diff.md) **(experimental)** | medium / high / **critical** | A dependency **update** that introduces a new capability the prior version lacked. `scan`-only. |
 
 ## Preconditions
 

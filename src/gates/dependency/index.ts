@@ -42,6 +42,10 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'starjacking',
   'native-binary',
   'tarball-anomaly',
+  // capability-diff fetches the prior version's tarball, so it is network-bound.
+  // It is intentionally not in CODE_RULE_IDS (it does not participate in the
+  // per-file chain detector), so it is listed here explicitly.
+  'capability-diff',
   ...CODE_RULE_IDS,
 ]);
 
