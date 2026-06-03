@@ -28,6 +28,18 @@ export interface ResolvedDependency {
   changed: boolean;
 }
 
+/**
+ * One package entry from the git-baseline lockfile. Lets `capability-diff`
+ * locate (and fetch the tarball of) the pre-update version of an updated
+ * dependency to diff capabilities against.
+ */
+export interface BaselineEntry {
+  name: string;
+  version: string;
+  resolved?: string;
+  integrity?: string;
+}
+
 /** The integration clients a dependency rule may call. */
 export interface GateServices {
   registry: RegistryClient;
@@ -60,6 +72,12 @@ export interface DependencyGateContext {
    */
   inScope: ResolvedDependency[];
   services: GateServices;
+  /**
+   * Index of the git-baseline lockfile's packages, keyed by name. Populated
+   * for `scan` only (an `audit` has no baseline to diff against). Lets
+   * `capability-diff` find the pre-update version of an updated dependency.
+   */
+  baseline?: ReadonlyMap<string, BaselineEntry[]>;
   /**
    * The instant the scan started. Rules use this instead of `Date.now()` so
    * results are deterministic and testable.

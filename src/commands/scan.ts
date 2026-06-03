@@ -9,6 +9,7 @@ import { computeVerdict, type GuardMode, type Verdict } from '../engine/verdict.
 import { detectChains } from '../gates/code/chain.js';
 import { runDependencyGate } from '../gates/dependency/index.js';
 import type {
+  BaselineEntry,
   DependencyGateContext,
   ResolvedDependency,
   ScanType,
@@ -77,16 +78,26 @@ function managerOfKind(kind: ParsedLockfile['kind']): PackageManager {
   }
 }
 
+/** The git baseline, parsed once: the changed-key set plus a by-name index. */
+interface BaselineResult {
+  /** `name@version` pairs that are new relative to the baseline. */
+  changedKeys: Set<string>;
+  /** Every baseline package, grouped by name (for prior-version lookups). */
+  byName: Map<string, BaselineEntry[]>;
+}
+
 /**
- * Determines which `name@version` pairs are new relative to the git baseline.
+ * Parses the lockfile at the git baseline and derives both the set of changed
+ * `name@version` pairs and a by-name index of the baseline's packages (so
+ * `capability-diff` can locate the pre-update version of an updated dep).
  * Returns `null` when there is no usable baseline (not a repo, lockfile absent
  * at the ref, unparseable) — the caller then treats everything as in scope.
  */
-async function computeChangedSet(
+async function computeBaseline(
   dir: string,
   lockfile: ParsedLockfile,
   baseRef: string,
-): Promise<Set<string> | null> {
+): Promise<BaselineResult | null> {
   const git = new ExecGitClient(dir);
   if (!(await git.isRepo())) return null;
 
@@ -100,13 +111,26 @@ async function computeChangedSet(
     return null;
   }
 
+  const byName = new Map<string, BaselineEntry[]>();
+  for (const p of baseline.packages) {
+    const entry: BaselineEntry = {
+      name: p.name,
+      version: p.version,
+      ...(p.resolved ? { resolved: p.resolved } : {}),
+      ...(p.integrity ? { integrity: p.integrity } : {}),
+    };
+    const list = byName.get(p.name);
+    if (list) list.push(entry);
+    else byName.set(p.name, [entry]);
+  }
+
   const baselineKeys = new Set(baseline.packages.map((p) => `${p.name}@${p.version}`));
-  const changed = new Set<string>();
+  const changedKeys = new Set<string>();
   for (const pkg of lockfile.packages) {
     const key = `${pkg.name}@${pkg.version}`;
-    if (!baselineKeys.has(key)) changed.add(key);
+    if (!baselineKeys.has(key)) changedKeys.add(key);
   }
-  return changed;
+  return { changedKeys, byName };
 }
 
 function applyOverrides(config: GuardConfig, options: ScanOptions): GuardConfig {
@@ -206,10 +230,11 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     ...(project.packageManager ? { preferred: project.packageManager } : {}),
   });
 
-  const changedSet =
+  const baseline =
     scanType === 'scan'
-      ? await computeChangedSet(dir, lockfile, options.baseRef ?? 'HEAD')
+      ? await computeBaseline(dir, lockfile, options.baseRef ?? 'HEAD')
       : null;
+  const changedSet = baseline?.changedKeys ?? null;
 
   const dependencies: ResolvedDependency[] = lockfile.packages.map((pkg) => ({
     name: pkg.name,
@@ -235,6 +260,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     config,
     dependencies,
     inScope,
+    ...(baseline ? { baseline: baseline.byName } : {}),
     now: startedAt,
     services: {
       cache,

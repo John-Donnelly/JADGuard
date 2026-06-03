@@ -3,8 +3,12 @@ import { scanSource } from '../../../integrations/code-scan.js';
 import type { DependencyRule } from '../../dependency/types.js';
 import { gatherScannableFiles } from '../scope.js';
 
-/** Matches a require/import of (node:)child_process. */
-const IMPORT_PATTERN =
+/**
+ * Matches a require/import of (node:)child_process. Exported (with the call
+ * patterns) so `capabilities.ts` reuses the exact same process-capability
+ * detection — keep them as the single source of truth.
+ */
+export const CHILD_PROCESS_IMPORT =
   /\brequire\s*\(\s*['"](?:node:)?child_process['"]\s*\)|\bfrom\s+['"](?:node:)?child_process['"]/;
 
 /**
@@ -12,14 +16,15 @@ const IMPORT_PATTERN =
  * its method form (`cp.exec(...)`) because the bare-identifier form is too
  * easy to confuse with `regex.exec(string)`.
  */
-const METHOD_USE = /\.(?:spawn|exec|execFile|spawnSync|execSync|execFileSync|fork)\s*\(/;
+export const CHILD_PROCESS_METHOD_CALL =
+  /\.(?:spawn|exec|execFile|spawnSync|execSync|execFileSync|fork)\s*\(/;
 
 /**
  * Matches a bare `spawn(`/`fork(`/etc. call — covers destructured imports
  * (`const { spawn } = require('child_process'); spawn(...)`). `exec` is
  * deliberately omitted from the bare list to avoid `regex.exec(str)` FPs.
  */
-const BARE_USE =
+export const CHILD_PROCESS_BARE_CALL =
   /(?<![.$\w])(?:spawn|execFile|spawnSync|execSync|execFileSync|fork)\s*\(/;
 
 /**
@@ -51,10 +56,10 @@ export const processSpawnRule: DependencyRule = {
         const { code, noComments } = scanSource(file.content);
         // Import strings ('child_process') are blanked in `code`; check the
         // comments-stripped view (strings preserved) for the import literal.
-        if (!IMPORT_PATTERN.test(noComments)) continue;
+        if (!CHILD_PROCESS_IMPORT.test(noComments)) continue;
         // Spawn/exec calls are tokens, not string content — match against the
         // fully blanked `code` view to avoid string-content false positives.
-        if (!METHOD_USE.test(code) && !BARE_USE.test(code)) continue;
+        if (!CHILD_PROCESS_METHOD_CALL.test(code) && !CHILD_PROCESS_BARE_CALL.test(code)) continue;
         matchedFiles.push(file.path);
       }
       if (matchedFiles.length === 0) continue;
