@@ -1,8 +1,12 @@
-name: Refresh threat feeds
+name: Refresh & monitor threat feeds
 
-# Keeps the bundled known-malware blocklist fresh. A stale blocklist in a
-# security tool produces false confidence (STRATEGY.private.md §3), so this runs
-# weekly and opens a PR a human reviews — the data is never auto-merged.
+# Keeps Guard's three bundled feeds trustworthy. A stale feed in a security tool
+# produces false confidence (STRATEGY.private.md §3), so this runs weekly:
+#   - `blocklist` auto-refreshes the known-malware feed from the Datadog dataset
+#     and opens a PR a human reviews — never auto-merged.
+#   - `freshness` checks all three feeds' age (blocklist, popular-packages,
+#     ioc-signatures) and fails loudly if any is stale, so the hand-curated
+#     feeds (which cannot be auto-refreshed) are surfaced for human review.
 
 on:
   schedule:
@@ -11,17 +15,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: refresh-feeds
   cancel-in-progress: false
 
 jobs:
-  refresh:
+  blocklist:
     name: Refresh known-malware blocklist
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -55,3 +61,23 @@ jobs:
             --body "Automated refresh of \`data/blocklist.json\` from the Datadog malicious-software-packages dataset. Review the diff and the resulting bundle size before merging." \
             --label "dependencies" \
             || echo "PR may already exist for $BRANCH"
+
+  freshness:
+    name: Check feed freshness (all 3 feeds)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      # Fails the run if any feed is past its max age. For the hand-curated
+      # feeds (popular-packages, ioc-signatures) this is the "never silent"
+      # prompt to refresh from current incident research.
+      - name: Check feed freshness
+        run: node scripts/check-feed-freshness.mjs
