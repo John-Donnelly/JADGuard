@@ -50,6 +50,25 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Heuristic rules that are **opt-in** — off in the zero-config default because
+ * they are "review this" signals prone to triage noise on a clean tree (the
+ * dogfood audit produced dozens of benign findings from these). Enable any of
+ * them per-rule in config (`rules.<id>.enabled: true`) or all at once with the
+ * CLI `--all` flag. The default-on rules are everything else in the catalog:
+ * the deterministic / near-zero-FP checks plus accurate OSV advisories.
+ */
+export const OPTIONAL_RULE_IDS: readonly string[] = [
+  'provenance',
+  'maintainer',
+  'bundled-deps',
+  'manifest-confusion',
+  'manifest-tampering',
+  'starjacking',
+  'native-binary',
+  'tarball-anomaly',
+];
+
+/**
  * The full dependency-gate rule catalog, in report order. `self-integrity`
  * runs first so configuration tampering surfaces before anything else.
  */

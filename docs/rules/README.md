@@ -46,6 +46,13 @@ never exit the process — the verdict engine owns exit codes.
 | `cooldown`           | medium   | Versions published inside the cooldown window — too new to be vetted.   |
 | `advisories`         | high     | Versions with a known security advisory (via OSV).                       |
 
+**Opt-in (off in the zero-config default).** Eight heuristic "review this" rules
+are off unless enabled per-rule (`rules.<id>.enabled: true`) or via `--all`:
+`provenance`, `maintainer`, `bundled-deps`, `manifest-confusion`,
+`manifest-tampering`, `starjacking`, `native-binary`, `tarball-anomaly`. The
+default-on set is the rest of the catalog — the deterministic / near-zero-FP
+checks plus accurate OSV `advisories`.
+
 ## The code gate (opt-in, `--code`)
 
 | Rule                                         | Default                | What it catches                                                                |
