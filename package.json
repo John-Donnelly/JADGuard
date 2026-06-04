@@ -56,6 +56,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run test",
+    "check:feeds": "node scripts/check-feed-freshness.mjs",
     "integration": "node test/integration/run.mjs"
   },
   "dependencies": {
