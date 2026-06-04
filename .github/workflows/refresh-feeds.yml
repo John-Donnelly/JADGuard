@@ -2,11 +2,12 @@ name: Refresh & monitor threat feeds
 
 # Keeps Guard's three bundled feeds trustworthy. A stale feed in a security tool
 # produces false confidence (STRATEGY.private.md §3), so this runs weekly:
-#   - `blocklist` auto-refreshes the known-malware feed from the Datadog dataset
-#     and opens a PR a human reviews — never auto-merged.
+#   - `blocklist` auto-refreshes the known-malware feed from the Datadog dataset.
+#   - `popular` auto-refreshes the popular-package list from npm-high-impact.
+#     Both open a PR a human reviews — never auto-merged.
 #   - `freshness` checks all three feeds' age (blocklist, popular-packages,
 #     ioc-signatures) and fails loudly if any is stale, so the hand-curated
-#     feeds (which cannot be auto-refreshed) are surfaced for human review.
+#     ioc-signatures feed (which cannot be auto-refreshed) is surfaced for review.
 
 on:
   schedule:
@@ -59,6 +60,46 @@ jobs:
           gh pr create \
             --title "chore: refresh known-malware blocklist (${DATE})" \
             --body "Automated refresh of \`data/blocklist.json\` from the Datadog malicious-software-packages dataset. Review the diff and the resulting bundle size before merging." \
+            --label "dependencies" \
+            || echo "PR may already exist for $BRANCH"
+
+  popular:
+    name: Refresh popular-package list
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Refresh popular packages
+        run: node scripts/refresh-popular.mjs
+
+      - name: Open a PR if the feed changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/popular-packages.json; then
+            echo "No popular-package changes."
+            exit 0
+          fi
+          DATE="$(date -u +%Y-%m-%d)"
+          BRANCH="chore/refresh-popular-${DATE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add data/popular-packages.json
+          git commit -m "chore: refresh popular-package list (${DATE})"
+          git push --force-with-lease --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore: refresh popular-package list (${DATE})" \
+            --body "Automated refresh of \`data/popular-packages.json\` from npm-high-impact (top 1000 by dependents + downloads, merged with prior entries). Review the diff before merging." \
             --label "dependencies" \
             || echo "PR may already exist for $BRANCH"
 
