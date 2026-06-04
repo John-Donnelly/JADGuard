@@ -138,9 +138,12 @@ project's own first-party imports, and **downgrades a provably-unreachable
 advisory to `info`** — a CVE in a transitive dependency your own code never
 pulls in is unlikely to be exploitable in your usage (still dependency debt, so
 it is annotated, never silently suppressed). It is **fail-closed**: a dynamic
-`require()`/`import()`, an unparseable tree, or a lockfile without dependency
-edges yields `reachability: "unknown"` and keeps full severity — Guard only
-downgrades when it can *prove* unreachability. Enable it explicitly:
+`require()`/`import()` that could resolve to *any* package, an unparseable tree,
+or a lockfile without dependency edges yields `reachability: "unknown"` and
+keeps full severity — Guard only downgrades when it can *prove* unreachability.
+Relative dynamic imports (the ubiquitous lazy-loaded-route pattern,
+`import('./pages/' + name)`) are recognised as first-party and do **not** force
+`unknown`. Enable it explicitly:
 
 ```json
 { "experimental": { "reachability": true } }
