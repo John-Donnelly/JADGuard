@@ -17,6 +17,14 @@ export function parseRepoOwnerAndName(
   return { owner: owner.toLowerCase(), repo: repo.toLowerCase() };
 }
 
+/**
+ * Strips separators so punctuation variants compare equal — `sprintf-js` (the
+ * package) and `sprintf.js` (its repo) are the same project, not impersonation.
+ */
+function normalizeIdent(value: string): string {
+  return value.replace(/[-._]/g, '');
+}
+
 /** Splits a package name into its scope (if any) and basename. */
 function splitPackageName(name: string): { scope?: string; basename: string } {
   if (name.startsWith('@')) {
@@ -60,12 +68,27 @@ export const starjackingRule: DependencyRule = {
       if (!parsed) continue; // unparseable URL — don't speculate
 
       const { scope, basename } = splitPackageName(dep.name);
-      // Scope-owned monorepo: `@vercel/next` lives in `vercel/next.js`.
-      if (scope && scope === parsed.owner) continue;
+      const repoN = normalizeIdent(parsed.repo);
+      const baseN = normalizeIdent(basename);
+      const ownerN = normalizeIdent(parsed.owner);
+      const scopeN = scope ? normalizeIdent(scope) : undefined;
+      // Scope-owned or scope-named monorepo. npm enforces scope ownership, so a
+      // scope matching the repo owner OR the repo name (exactly or as a
+      // substring either way) is a legitimate publisher signal, not
+      // impersonation: `@vercel/next` in `vercel/next.js`, `@esbuild/linux-arm`
+      // in `evanw/esbuild`, `@aws-sdk/client-s3` in `aws/aws-sdk-js-v3`.
+      if (
+        scopeN &&
+        (scopeN === ownerN ||
+          scopeN === repoN ||
+          repoN.includes(scopeN) ||
+          scopeN.includes(repoN))
+      ) {
+        continue;
+      }
       // Repo name and basename are related either way (exact match, prefix,
-      // suffix, or substring).
-      if (parsed.repo === basename) continue;
-      if (parsed.repo.includes(basename) || basename.includes(parsed.repo)) continue;
+      // suffix, or substring), comparing punctuation-insensitively.
+      if (repoN === baseN || repoN.includes(baseN) || baseN.includes(repoN)) continue;
 
       findings.push({
         ruleId: 'starjacking',

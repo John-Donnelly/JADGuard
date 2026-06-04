@@ -674,6 +674,51 @@ describe('starjacking rule', () => {
     expect(await starjackingRule.run(ctx)).toHaveLength(0);
   });
 
+  it('accepts a scoped package whose scope matches the repo name, but still flags scoped impersonation', async () => {
+    const { starjackingRule } = await import(
+      '../src/gates/dependency/rules/starjacking.js'
+    );
+    const ctx = makeContext({
+      dependencies: [
+        // Scope matches the repo basename — `@esbuild/*` in `evanw/esbuild`.
+        makeDep({ name: '@esbuild/linux-arm', version: '0.27.7' }),
+        // Scope is a substring of the repo name — `@aws-sdk/*` in `aws/aws-sdk-js-v3`.
+        makeDep({ name: '@aws-sdk/client-s3', version: '3.0.0' }),
+        // Scope unrelated to a popular repo — real impersonation, must still fire.
+        makeDep({ name: '@evil/grab', version: '1.0.0' }),
+      ],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, {}, {}, {
+          '@esbuild/linux-arm@0.27.7': { url: 'https://github.com/evanw/esbuild' },
+          '@aws-sdk/client-s3@3.0.0': { url: 'https://github.com/aws/aws-sdk-js-v3' },
+          '@evil/grab@1.0.0': { url: 'https://github.com/facebook/react' },
+        }),
+      },
+    });
+    const findings = await starjackingRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.location.packageName).toBe('@evil/grab');
+  });
+
+  it('accepts a repo whose name differs from the package only by punctuation', async () => {
+    const { starjackingRule } = await import(
+      '../src/gates/dependency/rules/starjacking.js'
+    );
+    const ctx = makeContext({
+      dependencies: [makeDep({ name: 'sprintf-js', version: '1.0.3' })],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, {}, {}, {
+          'sprintf-js@1.0.3': { url: 'https://github.com/alexei/sprintf.js' },
+        }),
+      },
+    });
+    expect(await starjackingRule.run(ctx)).toHaveLength(0);
+  });
+
   it('accepts an explicit monorepo directory', async () => {
     const { starjackingRule } = await import(
       '../src/gates/dependency/rules/starjacking.js'
