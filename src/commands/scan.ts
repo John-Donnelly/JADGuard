@@ -24,6 +24,7 @@ import type {
   PackageManager,
   ParsedLockfile,
 } from '../gates/dependency/lockfile/types.js';
+import { OsvBlocklistClient } from '../integrations/blocklist.js';
 import { FileCache, MemoryCache } from '../integrations/cache.js';
 import { ExecGitClient } from '../integrations/git.js';
 import { HttpOsvClient } from '../integrations/osv.js';
@@ -272,6 +273,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     : new FileCache(`${dir}/.jadguard-cache`, 'registry');
   const threatFeed = loadBundledThreatFeed();
   const iocSignatures = loadBundledIocSignatures();
+  const osv = new HttpOsvClient();
   const context: DependencyGateContext = {
     scanType,
     project,
@@ -284,7 +286,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     services: {
       cache,
       registry: new HttpRegistryClient({ registry: config.registry, cache }),
-      osv: new HttpOsvClient(),
+      osv,
       threatFeed,
       // The tarball pipeline writes its own content-addressed disk cache and
       // makes outbound HTTP, so it is off in `--offline` mode.
@@ -295,6 +297,11 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
               cacheDir: `${dir}/.jadguard-cache/tarballs`,
             }),
           }),
+      // Online malicious-package lookup (OSSF via OSV): opt-in and online-only,
+      // so its mere presence tells `known-malware` to run the online check.
+      ...(!options.offline && config.blocklist.online
+        ? { blocklist: new OsvBlocklistClient(osv) }
+        : {}),
     },
   };
 
