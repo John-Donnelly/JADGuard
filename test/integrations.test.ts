@@ -260,6 +260,34 @@ describe('HttpOsvClient', () => {
     });
     await expect(client.queryBatch([{ name: 'x', version: '1' }])).rejects.toThrow();
   });
+
+  it('memoises results so overlapping queries do not re-request', async () => {
+    let requests = 0;
+    const client = new HttpOsvClient({
+      fetchImpl: fakeFetch(() => {
+        requests++;
+        return new Response(JSON.stringify({ results: [{ vulns: [{ id: 'GHSA-x' }] }, {}] }), {
+          status: 200,
+        });
+      }),
+    });
+    const first = await client.queryBatch([
+      { name: 'vuln', version: '1.0.0' },
+      { name: 'clean', version: '2.0.0' },
+    ]);
+    expect(first.get('vuln@1.0.0')).toEqual([{ id: 'GHSA-x' }]);
+    expect(requests).toBe(1);
+
+    // A second query over the same (already-cached) packages issues no request,
+    // and the clean package is still correctly reported as advisory-free.
+    const second = await client.queryBatch([
+      { name: 'vuln', version: '1.0.0' },
+      { name: 'clean', version: '2.0.0' },
+    ]);
+    expect(requests).toBe(1);
+    expect(second.get('vuln@1.0.0')).toEqual([{ id: 'GHSA-x' }]);
+    expect(second.has('clean@2.0.0')).toBe(false);
+  });
 });
 
 describe('readProjectInfo', () => {
