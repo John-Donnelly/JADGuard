@@ -74,6 +74,30 @@ describe('extractImports', () => {
     expect(result.specifiers).toContain('pkg-t');
     expect(result.dynamic).toBe(false);
   });
+
+  it('treats a relative dynamic import as safe (first-party code splitting)', () => {
+    expect(extractImports("const p = () => import('./pages/' + name);").dynamic).toBe(false);
+    expect(extractImports('const m = await import(`./routes/${name}.js`);').dynamic).toBe(false);
+    expect(extractImports("const c = require('../lib/' + id);").dynamic).toBe(false);
+  });
+
+  it('extracts a no-interpolation template-literal specifier', () => {
+    const result = extractImports('const x = require(`lodash`);');
+    expect(result.specifiers).toContain('lodash');
+    expect(result.dynamic).toBe(false);
+  });
+
+  it('taints a bare or non-relative computed dynamic import', () => {
+    expect(extractImports('import(name);').dynamic).toBe(true);
+    expect(extractImports("import('@scope/' + n);").dynamic).toBe(true);
+    expect(extractImports("require('plugin-' + id);").dynamic).toBe(true);
+  });
+
+  it('reads the full argument even when the import string contains a paren', () => {
+    const result = extractImports("const y = require('weird)name');");
+    expect(result.specifiers).toContain('weird)name');
+    expect(result.dynamic).toBe(false);
+  });
 });
 
 describe('packageNameFromSpecifier', () => {
@@ -115,6 +139,17 @@ describe('analyzeReachability', () => {
     const result = await analyzeReachability({ root: dir, lockfile: tree });
     expect(result.status).toBe('unknown');
     expect(result.reason).toMatch(/dynamic/);
+  });
+
+  it('still analyzes a project that lazy-loads its own routes (relative dynamic import)', async () => {
+    const dir = await tmpProject({
+      'src/index.js':
+        "import express from 'express';\nconst load = (n) => import('./routes/' + n);\n",
+    });
+    const result = await analyzeReachability({ root: dir, lockfile: tree });
+    expect(result.status).toBe('ok');
+    expect(result.reachable.has('express')).toBe(true);
+    expect(result.reachable.has('webpack')).toBe(false);
   });
 
   it('returns unknown when there is no first-party source', async () => {

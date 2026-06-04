@@ -37,40 +37,69 @@ const MAX_FILE_BYTES = 2_000_000;
 const FROM_RE = /\bfrom\s*['"]([^'"]+)['"]/g;
 /** Side-effect `import 'pkg'`. */
 const BARE_IMPORT_RE = /\bimport\s*['"]([^'"]+)['"]/g;
-/** Static `require('pkg')` / `import('pkg')` with a string-literal argument. */
-const CALL_LITERAL_RE = /\b(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-/** Any `require(…)` / `import(…)` call, for dynamic-argument detection. */
-const CALL_RE = /\b(?:require|import)\s*\(([^)]*)\)/g;
+/** The opening of a `require(` / `import(` call. */
+const CALL_OPEN_RE = /\b(?:require|import)\s*\(/g;
+
+/**
+ * Classifies a `require()` / `import()` argument. A **first-party** target — a
+ * relative (`./`, `../`) or absolute (`/`) path — can never resolve to a
+ * node_modules package, so a dynamic relative import (the ubiquitous
+ * route/code-splitting pattern, `import('./pages/' + name)`) is safe: its
+ * targets are already covered by scanning every first-party file. Only a bare
+ * or non-relative *computed* target could pull in an arbitrary package, and
+ * that forces the analysis to `unknown`.
+ */
+function classifyCallArg(arg: string): { specifier?: string; taint: boolean } {
+  const a = arg.trim();
+  // A single quoted string literal — static specifier.
+  const quoted = /^(['"])([^'"]*)\1$/.exec(a);
+  if (quoted) return { specifier: quoted[2]!, taint: false };
+  // A template literal with no interpolation — static specifier.
+  const template = /^`([^`]*)`$/.exec(a);
+  if (template && !template[1]!.includes('${')) return { specifier: template[1]!, taint: false };
+  // A computed expression rooted at a relative/absolute path string is
+  // first-party, so it cannot introduce a new package.
+  const firstString = /['"`]([^'"`]*)/.exec(a);
+  if (firstString && /^[./]/.test(firstString[1]!)) return { taint: false };
+  // Bare variable, or a non-relative string prefix → could be any package.
+  return { taint: true };
+}
 
 /**
  * Extracts the package import specifiers from one source file and reports
- * whether it contains a **dynamic** `require()` / `import()` (a non-string-literal
- * argument). Operates on the {@link scanSource} views so matches inside strings
- * or comments do not mislead the dynamic check.
+ * whether it contains a **dynamic** `require()` / `import()` that could resolve
+ * to an arbitrary package. Operates on the {@link scanSource} views so matches
+ * inside strings or comments do not mislead the analysis.
  *
- * Specifier extraction runs on the comments-stripped view (string contents
- * preserved): a false specifier picked up from inside a string only ever
- * *adds* a reachable name, which is the safe direction. Dynamic detection runs
- * on the fully-blanked `code` view, where a static string argument collapses to
- * whitespace — anything left between the parens is a real (dynamic) expression.
+ * Static `from` / side-effect specifiers are read from the comments-stripped
+ * view (a false hit from inside a string only ever *adds* a reachable name —
+ * the safe direction). Call sites are located on the fully-blanked `code` view
+ * (so a `require(` inside a string is invisible) and their argument text is
+ * read from the positionally-aligned comments-stripped view, then classified:
+ * static and relative-dynamic targets are safe; a bare/non-relative dynamic
+ * target taints the file.
  */
 export function extractImports(source: string): { specifiers: string[]; dynamic: boolean } {
   const { code, noComments } = scanSource(source);
   const specifiers: string[] = [];
-  for (const re of [FROM_RE, BARE_IMPORT_RE, CALL_LITERAL_RE]) {
+  for (const re of [FROM_RE, BARE_IMPORT_RE]) {
     re.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = re.exec(noComments)) !== null) specifiers.push(match[1]!);
   }
 
   let dynamic = false;
-  CALL_RE.lastIndex = 0;
-  let call: RegExpExecArray | null;
-  while ((call = CALL_RE.exec(code)) !== null) {
-    if (call[1]!.trim().length > 0) {
-      dynamic = true;
-      break;
-    }
+  CALL_OPEN_RE.lastIndex = 0;
+  let open: RegExpExecArray | null;
+  while ((open = CALL_OPEN_RE.exec(code)) !== null) {
+    const argStart = open.index + open[0].length;
+    // Find the closing paren on `code`, where string contents are blanked, so a
+    // `)` inside the argument string is not mistaken for the call's close.
+    const closeOffset = code.slice(argStart).indexOf(')');
+    const argEnd = closeOffset === -1 ? code.length : argStart + closeOffset;
+    const { specifier, taint } = classifyCallArg(noComments.slice(argStart, argEnd));
+    if (specifier) specifiers.push(specifier);
+    if (taint) dynamic = true;
   }
 
   return { specifiers, dynamic };
@@ -161,7 +190,10 @@ export async function analyzeReachability(
     }
     const { specifiers, dynamic } = extractImports(source);
     if (dynamic) {
-      return unknown('first-party code uses a dynamic require()/import()', files.length);
+      return unknown(
+        'first-party code uses a dynamic require()/import() that could resolve to any package',
+        files.length,
+      );
     }
     for (const spec of specifiers) {
       const name = packageNameFromSpecifier(spec);
