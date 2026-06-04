@@ -24,7 +24,7 @@ const DAY_MS = 86_400_000;
 
 const FEEDS = [
   { file: 'blocklist.json', label: 'known-malware blocklist', maxAgeDays: 21, source: 'auto-refreshed' },
-  { file: 'popular-packages.json', label: 'popular packages', maxAgeDays: 120, source: 'hand-curated' },
+  { file: 'popular-packages.json', label: 'popular packages', maxAgeDays: 21, source: 'auto-refreshed' },
   { file: 'ioc-signatures.json', label: 'campaign IOC signatures', maxAgeDays: 120, source: 'hand-curated' },
 ];
 
@@ -68,10 +68,10 @@ async function main() {
 
   if (staleCount > 0) {
     console.error(
-      `\n${staleCount} feed(s) stale. blocklist.json auto-refreshes via ` +
-        'scripts/refresh-blocklist.mjs (a stale blocklist means that pipeline has ' +
-        'stalled); popular-packages.json and ioc-signatures.json are hand-curated — ' +
-        'update them from current incident research and open a PR.',
+      `\n${staleCount} feed(s) stale. blocklist.json and popular-packages.json ` +
+        'auto-refresh via scripts/refresh-blocklist.mjs and scripts/refresh-popular.mjs ' +
+        '(staleness there means the refresh pipeline has stalled); ioc-signatures.json is ' +
+        'hand-curated — update it from current incident research and open a PR.',
     );
     process.exit(1);
   }
