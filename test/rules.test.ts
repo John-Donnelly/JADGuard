@@ -12,6 +12,7 @@ import {
   failingRegistry,
   makeContext,
   makeDep,
+  stubBlocklist,
   stubOsv,
   stubRegistry,
   stubTarballs,
@@ -1354,6 +1355,69 @@ describe('known-malware rule', () => {
   it('degrades to no findings (does not throw) when no threat feed is present', async () => {
     const ctx = ctxWith([{ name: 'chalk', version: '5.6.1' }], [], false);
     expect(await knownMalwareRule.run(ctx)).toEqual([]);
+  });
+
+  function onlineCtx(
+    deps: Array<{ name: string; version: string; external?: boolean }>,
+    bundled: Array<{ name: string; versions?: readonly string[]; campaign: string }>,
+    blocklist: ReturnType<typeof stubBlocklist>,
+  ) {
+    return makeContext({
+      dependencies: deps.map((d) => makeDep(d)),
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        threatFeed: stubThreatFeed([], bundled),
+        blocklist,
+      },
+    });
+  }
+
+  it('flags an online-only OSSF match as critical and non-suppressible', async () => {
+    const ctx = onlineCtx(
+      [{ name: 'freshmal', version: '9.9.9' }],
+      [],
+      stubBlocklist({ 'freshmal@9.9.9': ['MAL-2025-0042'] }),
+    );
+    const findings = await knownMalwareRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('critical');
+    expect(findings[0]?.suppressible).toBe(false);
+    expect(findings[0]?.data?.reports).toEqual(['MAL-2025-0042']);
+    expect(findings[0]?.data?.campaign).toBe('ossf-osv');
+  });
+
+  it('does not double-flag a package already caught by the bundled blocklist', async () => {
+    const ctx = onlineCtx(
+      [{ name: 'chalk', version: '5.6.1' }],
+      [{ name: 'chalk', versions: ['5.6.1'], campaign: 'bundled-campaign' }],
+      stubBlocklist({ 'chalk@5.6.1': ['MAL-2025-0007'] }),
+    );
+    const findings = await knownMalwareRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.data?.campaign).toBe('bundled-campaign');
+  });
+
+  it('does not query external (non-registry) deps online', async () => {
+    let queried: string[] = [];
+    const ctx = onlineCtx([{ name: 'gitmal', version: '1.0.0', external: true }], [], {
+      queryMalicious: async (packages) => {
+        queried = packages.map((p) => p.name);
+        return new Map();
+      },
+    });
+    expect(await knownMalwareRule.run(ctx)).toHaveLength(0);
+    expect(queried).toEqual([]);
+  });
+
+  it('throws so the runner degrades when the online query fails', async () => {
+    const ctx = onlineCtx([{ name: 'x', version: '1.0.0' }], [], {
+      queryMalicious: async () => {
+        throw new Error('OSV unreachable');
+      },
+    });
+    await expect(knownMalwareRule.run(ctx)).rejects.toThrow();
   });
 });
 
