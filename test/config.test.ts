@@ -17,7 +17,16 @@ describe('parseConfig', () => {
     expect(config.failOn).toBe('high');
     expect(config.cooldownDays).toBe(7);
     expect(config.cooldown.exclude).toEqual([]);
+    expect(config.blocklist.online).toBe(false);
     expect(config.registry).toBe('https://registry.npmjs.org');
+  });
+
+  it('parses blocklist.online', () => {
+    expect(parseConfig({ blocklist: { online: true } }, 'test').blocklist.online).toBe(true);
+  });
+
+  it('rejects a non-boolean blocklist.online', () => {
+    expect(() => parseConfig({ blocklist: { online: 'yes' } }, 'test')).toThrow(/blocklist\.online/);
   });
 
   it('parses a complete config', () => {
