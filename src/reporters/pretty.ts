@@ -72,6 +72,19 @@ export class PrettyReporter implements Reporter {
     lines.push(this.paint(`  ${this.renderScope(report)}`, ANSI.dim));
     lines.push('');
     lines.push(`  ${this.renderVerdict(verdict)}`);
+    if (report.optionalRulesSkipped && report.optionalRulesSkipped.length > 0) {
+      const skipped = report.optionalRulesSkipped;
+      const shown = skipped.slice(0, 3).join(', ');
+      const more = skipped.length > 3 ? `, +${skipped.length - 3} more` : '';
+      lines.push('');
+      lines.push(
+        this.paint(
+          `  ${skipped.length} optional rule${skipped.length === 1 ? '' : 's'} off by default ` +
+            `(${shown}${more}) — enable per-rule in config or run with --all.`,
+          ANSI.dim,
+        ),
+      );
+    }
     if (report.threatFeed) {
       lines.push('');
       lines.push(
