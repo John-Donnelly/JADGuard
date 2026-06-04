@@ -83,7 +83,9 @@ Severity reflects the *shape* of what was added, not just the count:
   per-package with `{ "rule": "capability-diff", "package": "acme-utils" }`.
 - **Detector coverage, not call-graph.** Capability presence is pattern-based
   (the v0.x string tokenizer), so it reflects what the code *can* reach, not
-  proven reachability. A real call-graph is the Phase 14 reachability track.
+  proven reachability. The separate reachability triage (`experimental.
+  reachability`) traces which dependencies — and, best-effort, which advisory
+  functions — your code actually reaches.
 
 ## Remediation
 

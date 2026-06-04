@@ -23,7 +23,7 @@ never exit the process — the verdict engine owns exit codes.
 | Rule                                           | Default  | What it catches                                                          |
 | ---------------------------------------------- | -------- | ------------------------------------------------------------------------ |
 | [`self-integrity`](./self-integrity.md)        | critical | Configuration that attempts to disable Guard's own protections.          |
-| [`known-malware`](./known-malware.md)          | critical | Exact `name@version` match against the curated known-malware blocklist.   |
+| [`known-malware`](./known-malware.md)          | critical | Exact `name@version` match against the curated known-malware blocklist (+ optional live OSSF/OSV refresh). |
 | [`install-scripts`](./install-scripts.md)      | high\*   | Dependencies that declare install/lifecycle scripts.                     |
 | `integrity`                                    | medium   | Registry deps missing or weakly pinned by integrity hash.                |
 | `git-dep`                                      | medium   | Dependencies resolved from git rather than the public registry.          |
@@ -44,7 +44,7 @@ never exit the process — the verdict engine owns exit codes.
 | `native-binary`      | medium   | Native binaries shipped without `os`/`cpu` declared.                     |
 | `tarball-anomaly`    | medium   | Extracted tarball ≥5× the median of the package's recent versions.       |
 | `cooldown`           | medium   | Versions published inside the cooldown window — too new to be vetted.   |
-| `advisories`         | high     | Versions with a known security advisory (via OSV).                       |
+| `advisories`         | high     | Versions with a known security advisory (via OSV). Optional **reachability triage** (`experimental.reachability` / `reachabilitySymbols`) downgrades an advisory Guard can prove your code never reaches. |
 
 **Opt-in (off in the zero-config default).** Eight heuristic "review this" rules
 are off unless enabled per-rule (`rules.<id>.enabled: true`) or via `--all`:
