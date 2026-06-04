@@ -9,6 +9,13 @@ export interface PackageQuery {
   version: string;
 }
 
+/** A single OSV vulnerability record's human-facing detail. */
+export interface VulnerabilityRecord {
+  id: string;
+  /** Prose description; the only place npm advisories name a vulnerable symbol. */
+  details?: string;
+}
+
 /** Looks up known advisories, used by the `advisories` rule. */
 export interface OsvClient {
   /**
@@ -17,6 +24,13 @@ export interface OsvClient {
    * complete so the caller degrades the check.
    */
   queryBatch(packages: ReadonlyArray<PackageQuery>): Promise<Map<string, AdvisoryMatch[]>>;
+  /**
+   * Fetches one full vulnerability record (for its prose `details`). Returns
+   * `undefined` when the record is unavailable. Best-effort: used only by the
+   * experimental symbol-reachability layer, which keeps full severity on
+   * failure rather than degrading the gate.
+   */
+  fetchVulnerability(id: string): Promise<VulnerabilityRecord | undefined>;
 }
 
 export interface HttpOsvClientOptions {
@@ -54,6 +68,8 @@ export class HttpOsvClient implements OsvClient {
    * request set instead of duplicating it.
    */
   private readonly memo = new Map<string, AdvisoryMatch[]>();
+  /** Per-instance memo of fetched full records, keyed by OSV id. */
+  private readonly vulnMemo = new Map<string, VulnerabilityRecord | undefined>();
 
   constructor(options: HttpOsvClientOptions = {}) {
     this.endpoint = (options.endpoint ?? DEFAULT_ENDPOINT).replace(/\/+$/, '');
@@ -115,5 +131,27 @@ export class HttpOsvClient implements OsvClient {
       this.memo.set(packageKey(pkg), advisories);
       if (advisories.length > 0) out.set(packageKey(pkg), advisories);
     });
+  }
+
+  async fetchVulnerability(id: string): Promise<VulnerabilityRecord | undefined> {
+    if (this.vulnMemo.has(id)) return this.vulnMemo.get(id);
+    let record: VulnerabilityRecord | undefined;
+    try {
+      const response = await this.fetchImpl(
+        `${this.endpoint}/v1/vulns/${encodeURIComponent(id)}`,
+        { signal: AbortSignal.timeout(this.timeoutMs) },
+      );
+      if (response.ok) {
+        const body = (await response.json()) as { id?: unknown; details?: unknown };
+        record = {
+          id: typeof body.id === 'string' ? body.id : id,
+          ...(typeof body.details === 'string' ? { details: body.details } : {}),
+        };
+      }
+    } catch {
+      record = undefined; // best-effort: a fetch failure simply yields no record
+    }
+    this.vulnMemo.set(id, record);
+    return record;
   }
 }

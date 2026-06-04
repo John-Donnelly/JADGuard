@@ -171,6 +171,7 @@ describe('applyReachability', () => {
     status: 'ok',
     reachable: new Set(reachable),
     filesScanned: 1,
+    firstPartyImports: new Set(),
   });
 
   it('downgrades an unreachable advisory to info and annotates it', () => {
@@ -190,7 +191,12 @@ describe('applyReachability', () => {
 
   it('keeps severity and marks unknown when the analysis was unsound', () => {
     const finding = advisory('lodash');
-    applyReachability([finding], { status: 'unknown', reachable: new Set(), filesScanned: 0 });
+    applyReachability([finding], {
+      status: 'unknown',
+      reachable: new Set(),
+      filesScanned: 0,
+      firstPartyImports: new Set(),
+    });
     expect(finding.severity).toBe('high');
     expect(finding.data?.reachability).toBe('unknown');
   });

@@ -17,7 +17,18 @@ export interface ReachabilityResult {
   reason?: string;
   /** Number of first-party source files scanned. */
   filesScanned: number;
+  /** Package names first-party code imports directly (the reachability seeds). */
+  firstPartyImports: ReadonlySet<string>;
+  /**
+   * Every identifier referenced in first-party code. Populated only when
+   * `collectSymbols` is requested; the experimental symbol-reachability layer
+   * uses it to tell whether an advisory's named function is referenced at all.
+   */
+  firstPartySymbols?: ReadonlySet<string>;
 }
+
+/** Matches a JavaScript identifier (for the first-party symbol set). */
+const IDENTIFIER_RE = /[A-Za-z_$][\w$]*/g;
 
 const SOURCE_EXT = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts']);
 const EXCLUDED_DIRS = new Set([
@@ -152,10 +163,22 @@ export interface AnalyzeReachabilityOptions {
   /** Project root whose first-party source is scanned. */
   root: string;
   lockfile: ParsedLockfile;
+  /**
+   * Also collect the identifiers referenced in first-party code (for the
+   * experimental symbol-reachability layer). Adds a second scan per file, so it
+   * is opt-in.
+   */
+  collectSymbols?: boolean;
 }
 
 function unknown(reason: string, filesScanned = 0): ReachabilityResult {
-  return { status: 'unknown', reachable: new Set(), reason, filesScanned };
+  return {
+    status: 'unknown',
+    reachable: new Set(),
+    reason,
+    filesScanned,
+    firstPartyImports: new Set(),
+  };
 }
 
 /**
@@ -178,6 +201,7 @@ export async function analyzeReachability(
   if (files.length === 0) return unknown('no first-party source files found');
 
   const seeds = new Set<string>();
+  const symbols = options.collectSymbols ? new Set<string>() : undefined;
   for (const file of files) {
     let source: string;
     try {
@@ -199,10 +223,22 @@ export async function analyzeReachability(
       const name = packageNameFromSpecifier(spec);
       if (name) seeds.add(name);
     }
+    if (symbols) {
+      // Every identifier referenced in code or string literals (comments
+      // stripped). A symbol absent here is one first-party code never names.
+      const { noComments } = scanSource(source);
+      for (const match of noComments.matchAll(IDENTIFIER_RE)) symbols.add(match[0]);
+    }
   }
 
   const graph = buildDependencyGraph(options.lockfile);
-  return { status: 'ok', reachable: reachableFrom(graph, seeds), filesScanned: files.length };
+  return {
+    status: 'ok',
+    reachable: reachableFrom(graph, seeds),
+    filesScanned: files.length,
+    firstPartyImports: seeds,
+    ...(symbols ? { firstPartySymbols: symbols } : {}),
+  };
 }
 
 /**
