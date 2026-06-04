@@ -90,7 +90,8 @@ export class PrettyReporter implements Reporter {
       lines.push(
         this.paint(
           `  threat feed: ${report.threatFeed.generatedAt} · ${report.threatFeed.popularCount} popular packages · ` +
-            `${report.threatFeed.blocklistCount} known-malicious (${report.threatFeed.blocklistGeneratedAt})`,
+            `${report.threatFeed.blocklistCount} known-malicious (${report.threatFeed.blocklistGeneratedAt}) · ` +
+            `${report.threatFeed.iocCount} campaign IOCs (${report.threatFeed.iocGeneratedAt})`,
           ANSI.dim,
         ),
       );
