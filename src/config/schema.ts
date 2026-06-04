@@ -22,6 +22,16 @@ export interface CooldownConfig {
   exclude: string[];
 }
 
+/** Configuration for the known-malware blocklist. */
+export interface BlocklistConfig {
+  /**
+   * Also query the OSSF malicious-packages feed (via OSV) live, as a freshness
+   * boost over the bundled blocklist. Off by default; a network call, so it is
+   * dropped under `--offline` and subject to the fail-closed `onDegraded` policy.
+   */
+  online: boolean;
+}
+
 /** Configuration for the AST code-gate rules. */
 export interface CodeGateConfig {
   /**
@@ -47,6 +57,8 @@ export interface GuardConfig {
   cooldownDays: number;
   /** Time-gate configuration (cooldown exclusions). */
   cooldown: CooldownConfig;
+  /** Known-malware blocklist configuration (online refresh). */
+  blocklist: BlocklistConfig;
   /** Registry base URL used by the `cooldown` rule. */
   registry: string;
   /**
@@ -66,6 +78,7 @@ export const DEFAULT_CONFIG: GuardConfig = {
   ignores: [],
   cooldownDays: 7,
   cooldown: { exclude: [] },
+  blocklist: { online: false },
   registry: 'https://registry.npmjs.org',
   experimental: {},
   codeGate: { enabled: false },
@@ -143,6 +156,7 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
     rules: {},
     ignores: [],
     cooldown: { exclude: [] },
+    blocklist: { online: false },
     experimental: {},
     codeGate: { enabled: false },
   };
@@ -217,6 +231,12 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
     const codeGate = asObject(obj.codeGate, source, 'codeGate');
     if (codeGate.enabled !== undefined) {
       config.codeGate.enabled = asBoolean(codeGate.enabled, source, 'codeGate.enabled');
+    }
+  }
+  if (obj.blocklist !== undefined) {
+    const blocklist = asObject(obj.blocklist, source, 'blocklist');
+    if (blocklist.online !== undefined) {
+      config.blocklist.online = asBoolean(blocklist.online, source, 'blocklist.online');
     }
   }
 

@@ -1,4 +1,5 @@
 import { DEFAULT_CONFIG } from '../src/config/schema.js';
+import type { BlocklistClient } from '../src/integrations/blocklist.js';
 import type { DependencyGateContext, ResolvedDependency } from '../src/gates/dependency/types.js';
 import type { ParsedLockfile } from '../src/gates/dependency/lockfile/types.js';
 import { MemoryCache } from '../src/integrations/cache.js';
@@ -145,6 +146,21 @@ export function stubTarballs(
       const key = tarball.path.replace(/^mock:/, '');
       const result = byKey[key];
       if (!result) throw new Error(`no stub tarball for ${key}`);
+      return result;
+    },
+  };
+}
+
+/** A BlocklistClient returning canned OSSF malicious-package reports by `name@version`. */
+export function stubBlocklist(byKey: Record<string, string[]>): BlocklistClient {
+  return {
+    queryMalicious: async (packages) => {
+      const result = new Map<string, { id: string }[]>();
+      for (const pkg of packages) {
+        const key = `${pkg.name}@${pkg.version}`;
+        const ids = byKey[key];
+        if (ids) result.set(key, ids.map((id) => ({ id })));
+      }
       return result;
     },
   };

@@ -1,5 +1,6 @@
 import type { GuardConfig } from '../../config/schema.js';
 import type { Rule } from '../../engine/rule.js';
+import type { BlocklistClient } from '../../integrations/blocklist.js';
 import type { Cache } from '../../integrations/cache.js';
 import type { OsvClient } from '../../integrations/osv.js';
 import type { ProjectInfo } from '../../integrations/package-manager.js';
@@ -56,6 +57,12 @@ export interface GateServices {
    * tests that don't need it; otherwise loaded once at scan start.
    */
   threatFeed?: ThreatFeed;
+  /**
+   * Online malicious-package lookup (OSSF via OSV). Present only when
+   * `blocklist.online` is enabled and the run is not offline; its presence is
+   * what tells the `known-malware` rule to add the online check.
+   */
+  blocklist?: BlocklistClient;
 }
 
 /** Everything a dependency rule needs to produce findings. */

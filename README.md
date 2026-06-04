@@ -274,6 +274,16 @@ Node.js project at all.
   registry-native config.
 - `ignores` suppress *suppressible* findings only. Expired or unused ignores are
   reported as stale so the list cannot rot.
+- `blocklist.online` (default `false`) adds a live check of the OSSF
+  malicious-packages feed (via OSV) on top of the bundled known-malware
+  blocklist — a freshness boost that catches confirmed malware not yet bundled.
+  It is a network call, so it is dropped under `--offline` and subject to the
+  fail-closed `onDegraded` policy; the bundled blocklist remains the offline
+  floor either way.
+
+  ```json
+  { "blocklist": { "online": true } }
+  ```
 
 ## Continuous integration
 
