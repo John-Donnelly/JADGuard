@@ -42,7 +42,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 02-no-lockfile
@@ -100,7 +100,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 04-install-scripts-ignored
@@ -131,7 +131,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 05-weak-integrity
@@ -162,7 +162,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 06-git-dep
@@ -193,7 +193,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 07-unpinned-ranges
@@ -232,7 +232,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 08-dependency-confusion
@@ -263,7 +263,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 09-typosquat-experimental
@@ -298,7 +298,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 10-self-integrity-tampered
@@ -339,7 +339,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 11-known-malware
@@ -370,7 +370,7 @@ JAD Apps Guard v0.1.0 — audit
 
   8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 ```
 
 ### 12-install-blocked
@@ -401,7 +401,7 @@ JAD Apps Guard v0.1.0 — audit
 
   FAIL — 1 critical  (exit 1)
 
-  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02)
+  threat feed: 2026-06-04 · 1152 popular packages · 15 known-malicious (2026-06-02) · 10 campaign IOCs (2026-06-02)
 
 
 Install refused: the lockfile contains a confirmed-malicious or self-tampering finding (above). Nothing was fetched or extracted. Remove the offending dependency before installing.
