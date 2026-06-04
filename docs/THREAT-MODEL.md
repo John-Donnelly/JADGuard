@@ -30,27 +30,36 @@ your project already depends on** — the Shai-Hulud-class pattern: a maintainer
 account or publish pipeline is taken over and a poisoned new version ships under
 a trusted name.
 
-The v0.1 dependency gate addresses that adversary with five rules:
+Guard addresses that adversary with a layered dependency gate. The load-bearing
+control is an exact **known-malware blocklist** (`known-malware`,
+non-suppressible, `critical`) that hard-blocks any `name@version` confirmed
+malicious — bundled so it works offline, refreshable, with an optional live
+OSSF/OSV check. On top of it sit deterministic, near-zero-false-positive checks
+(`install-scripts`, `integrity`, `git-dep`, `unpinned-ranges`,
+`dependency-confusion`, `cooldown`) and accurate OSV `advisories` — the
+zero-config default set — plus a set of opt-in heuristic signals (`maintainer`,
+`starjacking`, `tarball-anomaly`, `provenance`, …). An opt-in **code gate**
+(`--code`) scans installed source for behavioural indicators (subprocess spawn,
+secret reads, outbound HTTP, known campaign IOCs, and ≥2 of those co-occurring),
+and the experimental `capability-diff` flags an update that gains a capability
+its prior version lacked. An optional **reachability triage** downgrades an
+advisory Guard can prove your own code never reaches.
 
-| Rule              | What it catches                                                            |
-| ----------------- | -------------------------------------------------------------------------- |
-| `cooldown`        | Versions published too recently to have been vetted by the ecosystem.      |
-| `install-scripts` | Dependencies that run lifecycle scripts — the primary code-exec vector.    |
-| `integrity`       | Registry dependencies not cryptographically pinned by a strong hash.       |
-| `advisories`      | Versions with a known security advisory (via OSV).                         |
-| `self-integrity`  | Configuration that tries to weaken Guard's own protections.                |
-
-Ahead of the gate, a `no-lockfile` precondition fails any project that declares
-dependencies but commits no lockfile: without a lockfile, installs are not
-reproducible and there is no pinned dependency set to inspect.
+The full catalog — per-rule severity, network needs, and false-positive notes —
+is the [rule reference](rules/README.md). `self-integrity` guards the gate
+itself, and a `no-lockfile` precondition fails any project that declares
+dependencies but commits no lockfile: without one, installs are not reproducible
+and there is no pinned dependency set to inspect.
 
 ## Trust boundaries and data flow
 
 Guard is **local-first**. Dependency code, lockfiles, and package metadata are
 analysed on the developer machine or inside the CI container.
 
-- Guard makes **outbound** requests only — to the npm registry (`cooldown`) and
-  to OSV (`advisories`). It never opens a listening socket.
+- Guard makes **outbound** requests only — to the npm registry (publish times,
+  metadata), to OSV (advisories and the optional online malicious-package
+  check), and to fetch dependency tarballs for the code gate and reachability
+  analysis. It never opens a listening socket.
 - Guard uploads **nothing**. There is no telemetry and no phone-home in the
   open-source CLI.
 - The on-disk cache (`.jadguard-cache/`) holds only registry publish-time data
@@ -82,16 +91,18 @@ Guard enforces this in several layers:
 
 ## What Guard does *not* protect against
 
-- **Runtime-only payloads.** Guard's v0.1 gate is metadata- and lockfile-based.
-  It cannot detect a malicious payload that is delivered purely at runtime with
-  no lockfile-visible indicator. The deferred code gate (AST analysis) narrows
-  this gap but, like all static analysis, cannot catch every payload.
+- **Runtime-only payloads.** The default gate is metadata- and lockfile-based.
+  The opt-in code gate scans installed source for behavioural indicators and
+  narrows this gap, but — like all static analysis, and using a dependency-free
+  string tokenizer rather than a full AST — it cannot catch every payload.
 - **A compromised registry serving a poisoned tarball under a matching hash.**
   Integrity hashes detect tampering *after* a lockfile is honestly resolved;
   they do not help if the lockfile was resolved against an already-poisoned
   registry.
-- **First-party malicious code.** Guard's v0.1 scope is the dependency surface.
-  Direct compromise of your own repository is the job of the deferred code gate.
+- **First-party malicious code.** Guard's scope is the dependency surface; it
+  does not audit your own repository for malicious code. Reachability analysis
+  reads first-party source only to trace which dependencies your code actually
+  uses, not to judge that source.
 - **Vulnerabilities with no advisory yet.** The `advisories` rule is only as
   current as OSV.
 - **A compromised host.** Guard trusts the machine it runs on. If the runner
