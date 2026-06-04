@@ -46,6 +46,14 @@ export class HttpOsvClient implements OsvClient {
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly batchSize: number;
+  /**
+   * Per-instance memo of every queried `name@version` → its advisories (an
+   * empty array means "queried, none found"). OSV data is stable for the life
+   * of a scan, so the `advisories` rule and the online `known-malware` check —
+   * which query overlapping package sets through the same client — share one
+   * request set instead of duplicating it.
+   */
+  private readonly memo = new Map<string, AdvisoryMatch[]>();
 
   constructor(options: HttpOsvClientOptions = {}) {
     this.endpoint = (options.endpoint ?? DEFAULT_ENDPOINT).replace(/\/+$/, '');
@@ -58,8 +66,14 @@ export class HttpOsvClient implements OsvClient {
     packages: ReadonlyArray<PackageQuery>,
   ): Promise<Map<string, AdvisoryMatch[]>> {
     const matches = new Map<string, AdvisoryMatch[]>();
-    for (let offset = 0; offset < packages.length; offset += this.batchSize) {
-      const chunk = packages.slice(offset, offset + this.batchSize);
+    const uncached: PackageQuery[] = [];
+    for (const pkg of packages) {
+      const cached = this.memo.get(packageKey(pkg));
+      if (cached === undefined) uncached.push(pkg);
+      else if (cached.length > 0) matches.set(packageKey(pkg), cached);
+    }
+    for (let offset = 0; offset < uncached.length; offset += this.batchSize) {
+      const chunk = uncached.slice(offset, offset + this.batchSize);
       await this.queryChunk(chunk, matches);
     }
     return matches;
@@ -96,6 +110,9 @@ export class HttpOsvClient implements OsvClient {
       const advisories = vulns
         .map((vuln) => (typeof vuln.id === 'string' ? { id: vuln.id } : undefined))
         .filter((match): match is AdvisoryMatch => match !== undefined);
+      // Record every queried package (empty array = no advisories) so a later
+      // overlapping query is a memo hit rather than a second request.
+      this.memo.set(packageKey(pkg), advisories);
       if (advisories.length > 0) out.set(packageKey(pkg), advisories);
     });
   }
