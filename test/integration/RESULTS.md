@@ -40,6 +40,8 @@ JAD Apps Guard v0.1.0 — audit
 
   PASS  (exit 0)
 
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
+
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
 
@@ -96,6 +98,8 @@ JAD Apps Guard v0.1.0 — audit
 
   FAIL — 1 high  (exit 1)
 
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
+
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
 
@@ -124,6 +128,8 @@ JAD Apps Guard v0.1.0 — audit
   1 of 1 dependencies evaluated · npm lockfile
 
   WARN — 1 low  (exit 0)
+
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
@@ -154,6 +160,8 @@ JAD Apps Guard v0.1.0 — audit
 
   WARN — 1 medium  (exit 0)
 
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
+
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
 
@@ -182,6 +190,8 @@ JAD Apps Guard v0.1.0 — audit
   1 of 1 dependencies evaluated · npm lockfile
 
   WARN — 1 medium  (exit 0)
+
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
@@ -220,6 +230,8 @@ JAD Apps Guard v0.1.0 — audit
 
   WARN — 3 low  (exit 0)
 
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
+
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
 
@@ -248,6 +260,8 @@ JAD Apps Guard v0.1.0 — audit
   1 of 1 dependencies evaluated · npm lockfile
 
   FAIL — 1 high  (exit 1)
+
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
@@ -281,6 +295,8 @@ JAD Apps Guard v0.1.0 — audit
   2 of 2 dependencies evaluated · npm lockfile
 
   WARN — 2 medium  (exit 0)
+
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
@@ -321,6 +337,8 @@ JAD Apps Guard v0.1.0 — audit
 
   FAIL — 3 critical  (exit 1)
 
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
+
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```
 
@@ -349,6 +367,8 @@ JAD Apps Guard v0.1.0 — audit
   1 of 1 dependencies evaluated · npm lockfile
 
   FAIL — 1 critical  (exit 1)
+
+  8 optional rules off by default (provenance, maintainer, bundled-deps, +5 more) — enable per-rule in config or run with --all.
 
   threat feed: 2026-05-23 · 239 popular packages · 15 known-malicious (2026-06-02)
 ```

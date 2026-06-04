@@ -7,7 +7,7 @@ import type { Severity } from '../engine/severity.js';
 import { applyIgnores } from '../engine/suppression.js';
 import { computeVerdict, type GuardMode, type Verdict } from '../engine/verdict.js';
 import { detectChains } from '../gates/code/chain.js';
-import { runDependencyGate } from '../gates/dependency/index.js';
+import { OPTIONAL_RULE_IDS, runDependencyGate } from '../gates/dependency/index.js';
 import { analyzeReachability, applyReachability } from '../gates/dependency/reachability.js';
 import type {
   BaselineEntry,
@@ -57,6 +57,22 @@ export interface ScanOptions {
   codeGate?: boolean;
   /** Restrict the run to only these rule ids (used by `verify-signatures`). */
   onlyRules?: readonly string[];
+  /** Include the opt-in heuristic rules that are off in the zero-config default. */
+  allRules?: boolean;
+}
+
+/**
+ * Determines which opt-in rules to skip for this run. They are skipped unless
+ * the user enabled them explicitly (`rules.<id>.enabled: true`), passed
+ * `--all`, or restricted the run to an explicit `onlyRules` set (where the
+ * caller has already chosen exactly which rules to run).
+ */
+export function optionalRulesToSkip(
+  config: GuardConfig,
+  opts: { allRules: boolean; hasOnlyRules: boolean },
+): string[] {
+  if (opts.allRules || opts.hasOnlyRules) return [];
+  return OPTIONAL_RULE_IDS.filter((id) => config.rules[id]?.enabled !== true);
 }
 
 export interface ScanResult {
@@ -287,6 +303,15 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     if (ruleConfig.severity) severityOverrides[id] = ruleConfig.severity;
   }
 
+  // Zero-config default: the opt-in heuristic rules are off unless explicitly
+  // enabled or `--all` is set. Surfaced in the report so the extra coverage is
+  // discoverable.
+  const skippedOptional = optionalRulesToSkip(config, {
+    allRules: options.allRules ?? false,
+    hasOnlyRules: options.onlyRules !== undefined,
+  });
+  for (const id of skippedOptional) disabledRuleIds.add(id);
+
   const { findings: gateFindings, degraded } = await runDependencyGate(context, {
     offline: options.offline ?? false,
     disabledRuleIds,
@@ -332,6 +357,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     dependenciesInScope: inScope.length,
     suppressedCount: suppression.suppressed.length,
     staleIgnores: suppression.staleIgnores,
+    ...(skippedOptional.length > 0 ? { optionalRulesSkipped: skippedOptional } : {}),
     threatFeed: {
       generatedAt: threatFeed.generatedAt,
       popularCount: threatFeed.popularCount,
