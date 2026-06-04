@@ -47,7 +47,11 @@ describe('parseNpmLockfile', () => {
     });
     const parsed = parseNpmLockfile(content, 'package-lock.json');
     expect(parsed.kind).toBe('npm');
-    expect(parsed.capabilities).toEqual({ installScripts: true, integrity: true });
+    expect(parsed.capabilities).toEqual({
+      installScripts: true,
+      integrity: true,
+      dependencyEdges: true,
+    });
     expect(parsed.packages).toHaveLength(4);
     expect(find(parsed.packages, '@scope/pkg')?.version).toBe('1.0.0');
     expect(parsed.packages.find((p) => p.name === 'esbuild')?.hasInstallScript).toBe(true);
@@ -227,7 +231,11 @@ describe('parseBunLockfile', () => {
     ].join('\n');
     const parsed = parseBunLockfile(content, 'bun.lock');
     expect(parsed.kind).toBe('bun');
-    expect(parsed.capabilities).toEqual({ installScripts: false, integrity: true });
+    expect(parsed.capabilities).toEqual({
+      installScripts: false,
+      integrity: true,
+      dependencyEdges: true,
+    });
     expect(parsed.packages.map((p) => p.name).sort()).toEqual([
       '@scope/pkg',
       'gitdep',

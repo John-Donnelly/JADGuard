@@ -23,7 +23,7 @@ function lockfile(overrides: Partial<ParsedLockfile>): ParsedLockfile {
     kind: 'npm',
     path: '/project/package-lock.json',
     packages: [],
-    capabilities: { installScripts: true, integrity: true },
+    capabilities: { installScripts: true, integrity: true, dependencyEdges: true },
     ...overrides,
   };
 }
@@ -60,7 +60,10 @@ describe('install-scripts rule', () => {
 
   it('reports an info finding when the lockfile cannot record scripts', async () => {
     const ctx = makeContext({
-      lockfile: lockfile({ kind: 'yarn-classic', capabilities: { installScripts: false, integrity: true } }),
+      lockfile: lockfile({
+        kind: 'yarn-classic',
+        capabilities: { installScripts: false, integrity: true, dependencyEdges: true },
+      }),
       dependencies: [makeDep({ name: 'x', version: '1.0.0' })],
     });
     const findings = await installScriptsRule.run(ctx);
@@ -592,7 +595,7 @@ describe('manifest-confusion rule', () => {
         kind: 'yarn-classic',
         path: '/p/yarn.lock',
         packages: [],
-        capabilities: { installScripts: false, integrity: true },
+        capabilities: { installScripts: false, integrity: true, dependencyEdges: true },
       },
     });
     const findings = await manifestConfusionRule.run(ctx);

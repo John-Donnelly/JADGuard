@@ -88,7 +88,7 @@ export function parseNpmLockfile(content: string, path: string): ParsedLockfile 
       path,
       formatVersion,
       packages: dedupePackages(packages),
-      capabilities: { installScripts: true, integrity: true },
+      capabilities: { installScripts: true, integrity: true, dependencyEdges: true },
     };
   }
 
@@ -100,6 +100,6 @@ export function parseNpmLockfile(content: string, path: string): ParsedLockfile 
     path,
     formatVersion,
     packages: dedupePackages(packages),
-    capabilities: { installScripts: false, integrity: true },
+    capabilities: { installScripts: false, integrity: true, dependencyEdges: true },
   };
 }
