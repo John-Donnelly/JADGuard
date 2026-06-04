@@ -152,13 +152,15 @@ Relative dynamic imports (the ubiquitous lazy-loaded-route pattern,
 **Function-level reachability** (`experimental.reachabilitySymbols`, also opt-in)
 goes one step finer: it reads the *function* an advisory names in its prose
 (npm advisories carry no structured symbol data, only text like *"the function
-`defaultsDeep`…"*) and, for a package reachable **only** through your
-first-party imports, downgrades the advisory when your code never references
-that function. It is conservative by construction — it acts only on a single,
-confidently-named symbol, only for packages no reachable dependency also pulls
-in (so scanning your own source is sound), and keeps full severity in every
-other case. The function comes from unreliable prose, so this is best-effort
-triage; it requires `experimental.reachability` too:
+`defaultsDeep`…"*) and scans the **reachable closure** — your first-party source
+plus every reachable dependency's tarball — for callers of it. The vulnerable
+function is defined *in* the flagged package, so the advisory downgrades only
+when **nothing outside that package** references the function (no caller → the
+vulnerable path is unreachable). It keeps full severity in every other case, and
+fails closed when the closure can't be scanned in full (offline, or the scan
+caps are hit). The function name comes from unreliable prose, so this acts only
+on a single, confidently-named symbol and is best-effort triage; it requires
+`experimental.reachability` too:
 
 ```json
 { "experimental": { "reachability": true, "reachabilitySymbols": true } }
