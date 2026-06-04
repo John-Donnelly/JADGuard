@@ -10,7 +10,7 @@ function lockfile(packages: LockfilePackage[]): ParsedLockfile {
     kind: 'npm',
     path: '/project/package-lock.json',
     packages,
-    capabilities: { installScripts: true, integrity: true },
+    capabilities: { installScripts: true, integrity: true, dependencyEdges: true },
   };
 }
 

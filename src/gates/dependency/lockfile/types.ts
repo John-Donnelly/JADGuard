@@ -51,6 +51,12 @@ export interface LockfileCapabilities {
   installScripts: boolean;
   /** The format records subresource-integrity hashes for registry packages. */
   integrity: boolean;
+  /**
+   * The format records per-package dependency edges (so `LockfilePackage.
+   * dependencies` is populated). The reachability triage requires this; it
+   * falls back to `unknown` when a format cannot express the graph.
+   */
+  dependencyEdges: boolean;
 }
 
 /** A lockfile reduced to the package set Guard's rules operate on. */

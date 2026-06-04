@@ -8,6 +8,7 @@ import { applyIgnores } from '../engine/suppression.js';
 import { computeVerdict, type GuardMode, type Verdict } from '../engine/verdict.js';
 import { detectChains } from '../gates/code/chain.js';
 import { runDependencyGate } from '../gates/dependency/index.js';
+import { analyzeReachability, applyReachability } from '../gates/dependency/reachability.js';
 import type {
   BaselineEntry,
   DependencyGateContext,
@@ -300,6 +301,16 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
   const findings = config.codeGate.enabled
     ? [...gateFindings, ...detectChains(gateFindings)]
     : gateFindings;
+
+  // Reachability triage (experimental): annotate advisory findings with whether
+  // the flagged package is reachable from the project's own first-party imports,
+  // downgrading provably-unreachable advisories to info. Annotation only —
+  // never a reason to suppress. Runs only when opted in and there is something
+  // to triage.
+  if (config.experimental.reachability && findings.some((f) => f.ruleId === 'advisories')) {
+    const reachability = await analyzeReachability({ root: dir, lockfile });
+    applyReachability(findings, reachability);
+  }
 
   const suppression = applyIgnores(findings, config.ignores, startedAt);
   const verdict = computeVerdict({
