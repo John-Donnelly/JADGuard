@@ -149,6 +149,21 @@ Relative dynamic imports (the ubiquitous lazy-loaded-route pattern,
 { "experimental": { "reachability": true } }
 ```
 
+**Function-level reachability** (`experimental.reachabilitySymbols`, also opt-in)
+goes one step finer: it reads the *function* an advisory names in its prose
+(npm advisories carry no structured symbol data, only text like *"the function
+`defaultsDeep`…"*) and, for a package reachable **only** through your
+first-party imports, downgrades the advisory when your code never references
+that function. It is conservative by construction — it acts only on a single,
+confidently-named symbol, only for packages no reachable dependency also pulls
+in (so scanning your own source is sound), and keeps full severity in every
+other case. The function comes from unreliable prose, so this is best-effort
+triage; it requires `experimental.reachability` too:
+
+```json
+{ "experimental": { "reachability": true, "reachabilitySymbols": true } }
+```
+
 ### Zero-config default
 
 With no config, Guard runs the **deterministic / near-zero-false-positive**
