@@ -115,7 +115,7 @@ modes, and remediation guidance.
 | `native-binary`         | medium   |    ✓    | Native binaries shipped without `os`/`cpu` declared (ELF, PE, Mach-O detection).      |
 | `tarball-anomaly`       | medium   |    ✓    | Extracted tarball is at least 5× the median of the package's recent versions.         |
 | `cooldown`              | medium   |    ✓    | Versions published inside the cooldown window — too new to be vetted.                 |
-| `advisories`            | high     |    ✓    | Versions with a known security advisory (via OSV).                                    |
+| `advisories`            | high     |    ✓    | Versions with a known security advisory (via OSV). Optional **reachability triage**.\*\*\*\* |
 | `self-integrity`        | critical |    —    | Configuration that attempts to disable Guard's own protections.                       |
 
 \* `install-scripts` reports `low` instead of `high` when the project enables
@@ -130,6 +130,20 @@ it clears the production false-positive corpus. Enable it explicitly:
 
 ```json
 { "experimental": { "typosquat": true } }
+```
+
+\*\*\*\* **Reachability triage** (experimental, opt-in) annotates each
+`advisories` finding with whether the flagged package is reachable from your
+project's own first-party imports, and **downgrades a provably-unreachable
+advisory to `info`** — a CVE in a transitive dependency your own code never
+pulls in is unlikely to be exploitable in your usage (still dependency debt, so
+it is annotated, never silently suppressed). It is **fail-closed**: a dynamic
+`require()`/`import()`, an unparseable tree, or a lockfile without dependency
+edges yields `reachability: "unknown"` and keeps full severity — Guard only
+downgrades when it can *prove* unreachability. Enable it explicitly:
+
+```json
+{ "experimental": { "reachability": true } }
 ```
 
 ## The code gate (opt-in)

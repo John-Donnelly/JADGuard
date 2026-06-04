@@ -53,7 +53,7 @@ function parseClassic(parsed: Record<string, unknown>, path: string): ParsedLock
     kind: 'yarn-classic',
     path,
     packages: dedupePackages(packages),
-    capabilities: { installScripts: false, integrity: true },
+    capabilities: { installScripts: false, integrity: true, dependencyEdges: true },
   };
 }
 
@@ -92,7 +92,7 @@ function parseBerry(parsed: Record<string, unknown>, path: string): ParsedLockfi
     path,
     formatVersion: Number.isFinite(formatVersion) ? formatVersion : undefined,
     packages: dedupePackages(packages),
-    capabilities: { installScripts: false, integrity: false },
+    capabilities: { installScripts: false, integrity: false, dependencyEdges: true },
   };
 }
 

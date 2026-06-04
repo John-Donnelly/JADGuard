@@ -93,6 +93,6 @@ export function parseBunLockfile(content: string, path: string): ParsedLockfile 
     formatVersion,
     packages: dedupePackages(packages),
     // Bun's lockfile does not record per-package lifecycle-script information.
-    capabilities: { installScripts: false, integrity: true },
+    capabilities: { installScripts: false, integrity: true, dependencyEdges: true },
   };
 }

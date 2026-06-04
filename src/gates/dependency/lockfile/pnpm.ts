@@ -127,6 +127,6 @@ export function parsePnpmLockfile(content: string, path: string): ParsedLockfile
         ? formatVersion
         : undefined,
     packages: dedupePackages(packages),
-    capabilities: { installScripts: true, integrity: true },
+    capabilities: { installScripts: true, integrity: true, dependencyEdges: true },
   };
 }
