@@ -149,6 +149,29 @@ Relative dynamic imports (the ubiquitous lazy-loaded-route pattern,
 { "experimental": { "reachability": true } }
 ```
 
+### Zero-config default
+
+With no config, Guard runs the **deterministic / near-zero-false-positive**
+rules plus accurate OSV `advisories` — the install-and-it-works set:
+`self-integrity`, `known-malware`, `install-scripts`, `integrity`, `git-dep`,
+`unpinned-ranges`, `dependency-confusion`, `cooldown`, `advisories`.
+
+Eight heuristic **"review this"** rules are **off by default** to keep the
+out-of-box signal clean: `provenance`, `maintainer`, `bundled-deps`,
+`manifest-confusion`, `manifest-tampering`, `starjacking`, `native-binary`,
+`tarball-anomaly`. Turn them on per-rule, or all at once:
+
+```json
+{ "rules": { "maintainer": { "enabled": true } } }
+```
+
+```sh
+jadguard audit --all    # also run the opt-in heuristic rules
+```
+
+The report footer notes how many optional rules were skipped, so the extra
+coverage stays discoverable.
+
 ## The code gate (opt-in)
 
 The code gate fetches each in-scope dependency's tarball, safe-extracts it,

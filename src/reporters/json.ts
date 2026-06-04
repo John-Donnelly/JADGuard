@@ -39,6 +39,7 @@ export class JsonReporter implements Reporter {
         suppressedCount: report.suppressedCount,
         degradedCount: verdict.degraded.length,
         staleIgnoreCount: report.staleIgnores.length,
+        optionalRulesSkipped: report.optionalRulesSkipped ?? [],
       },
       findings: verdict.findings.map((finding) => ({
         ruleId: finding.ruleId,

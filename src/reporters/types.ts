@@ -24,6 +24,11 @@ export interface Report {
   suppressedCount: number;
   /** Ignore entries that matched nothing or have expired. */
   staleIgnores: IgnoreRule[];
+  /**
+   * Opt-in heuristic rules that were off for this run (zero-config default).
+   * Surfaced so the extra coverage is discoverable. Absent/empty when all ran.
+   */
+  optionalRulesSkipped?: string[];
   /** Metadata for the bundled threat feed, surfaced so consumers can spot staleness. */
   threatFeed?: {
     generatedAt: string;

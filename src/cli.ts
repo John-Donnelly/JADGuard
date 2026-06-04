@@ -44,6 +44,7 @@ Options:
   --base <ref>          Git ref to diff against for \`scan\` (default: HEAD)
   --offline             Skip network-dependent rules (cooldown, advisories)
   --code                Enable the AST code-gate rules (off by default in v0.x)
+  --all                 Also run the opt-in heuristic rules (off by default; see below)
   --no-color            Disable coloured output
   --dry-run             (install/add) Print what would run without executing
   --remove              (allow) Remove the named package from the allowlist
@@ -77,6 +78,7 @@ const BOOL_FLAGS = new Set([
   '--no-color',
   '--force',
   '--code',
+  '--all',
   '--dry-run',
   '--remove',
   '--list',
@@ -158,6 +160,7 @@ async function runScanCommand(
     cooldownDays,
     baseRef: args.values.get('--base'),
     ...(args.bools.has('--code') ? { codeGate: true } : {}),
+    ...(args.bools.has('--all') ? { allRules: true } : {}),
   });
 
   const useColor =
