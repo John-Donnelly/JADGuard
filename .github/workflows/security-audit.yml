@@ -1,0 +1,56 @@
+name: Scheduled security audit
+
+# The PR/push dogfood gate (ci.yml) audits Guard's own dependencies OFFLINE for
+# determinism. This scheduled job runs the ONLINE audit, so a new advisory (CVE)
+# published against one of Guard's dependencies surfaces — and fails — even
+# without a code change to trigger CI.
+
+on:
+  schedule:
+    # 07:23 UTC every Thursday (off the hour; a different day from refresh-feeds).
+    - cron: '23 7 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: security-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Online audit of Guard's own dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Online (advisories, cooldown, provenance-of-record, …) against the build
+      # under test. Fails the run on a high+ finding — e.g. a dependency that
+      # picked up a CVE since the last code change.
+      - name: Audit Guard's own dependencies (online)
+        run: node dist/cli.js audit
+
+      - name: Generate SARIF
+        if: always()
+        run: node dist/cli.js audit --format sarif --output jadguard.sarif || true
+
+      - name: Upload findings to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@b22c66273205240d86582638b860f9b25772b4d3 # v3
+        with:
+          sarif_file: jadguard.sarif
