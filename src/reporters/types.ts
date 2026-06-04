@@ -37,6 +37,10 @@ export interface Report {
     blocklistCount: number;
     /** ISO date the known-malware blocklist was generated. */
     blocklistGeneratedAt: string;
+    /** Signatures in the known-IOC set (code gate). */
+    iocCount: number;
+    /** ISO date the known-IOC set was generated. */
+    iocGeneratedAt: string;
     source: string;
   };
   startedAt: string;

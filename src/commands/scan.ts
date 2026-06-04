@@ -30,6 +30,7 @@ import { HttpOsvClient } from '../integrations/osv.js';
 import { readProjectInfo, type ProjectInfo } from '../integrations/package-manager.js';
 import { HttpRegistryClient } from '../integrations/registry.js';
 import { HttpTarballClient } from '../integrations/tarball.js';
+import { loadBundledIocSignatures } from '../integrations/ioc-feed.js';
 import { loadBundledThreatFeed } from '../integrations/threat-feed.js';
 import { NO_LOCKFILE_RULE, noLockfileFinding } from '../preconditions.js';
 import type { Report } from '../reporters/types.js';
@@ -270,6 +271,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     ? new MemoryCache()
     : new FileCache(`${dir}/.jadguard-cache`, 'registry');
   const threatFeed = loadBundledThreatFeed();
+  const iocSignatures = loadBundledIocSignatures();
   const context: DependencyGateContext = {
     scanType,
     project,
@@ -363,6 +365,8 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
       popularCount: threatFeed.popularCount,
       blocklistCount: threatFeed.blocklistCount,
       blocklistGeneratedAt: threatFeed.blocklistGeneratedAt,
+      iocCount: iocSignatures.count,
+      iocGeneratedAt: iocSignatures.generatedAt,
       source: threatFeed.source,
     },
     startedAt: startedAt.toISOString(),

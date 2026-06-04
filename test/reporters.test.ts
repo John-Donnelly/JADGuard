@@ -91,3 +91,33 @@ describe('pretty reporter', () => {
     expect(output).toContain('\x1b[');
   });
 });
+
+describe('threat-feed footer', () => {
+  function reportWithFeed(): Report {
+    return {
+      ...makeReport(),
+      threatFeed: {
+        generatedAt: '2026-06-04',
+        popularCount: 1152,
+        blocklistCount: 15,
+        blocklistGeneratedAt: '2026-06-02',
+        iocCount: 10,
+        iocGeneratedAt: '2026-06-01',
+        source: 'test',
+      },
+    };
+  }
+
+  it('surfaces all three feeds, including campaign IOCs, in the pretty footer', () => {
+    const output = getReporter('pretty', { color: false }).format(reportWithFeed());
+    expect(output).toContain('1152 popular packages');
+    expect(output).toContain('15 known-malicious (2026-06-02)');
+    expect(output).toContain('10 campaign IOCs (2026-06-01)');
+  });
+
+  it('includes the IOC feed metadata in the JSON report', () => {
+    const parsed = JSON.parse(getReporter('json').format(reportWithFeed())) as Record<string, any>;
+    expect(parsed.threatFeed.iocCount).toBe(10);
+    expect(parsed.threatFeed.iocGeneratedAt).toBe('2026-06-01');
+  });
+});
