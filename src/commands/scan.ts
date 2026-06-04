@@ -9,6 +9,7 @@ import { computeVerdict, type GuardMode, type Verdict } from '../engine/verdict.
 import { detectChains } from '../gates/code/chain.js';
 import { OPTIONAL_RULE_IDS, runDependencyGate } from '../gates/dependency/index.js';
 import { analyzeReachability, applyReachability } from '../gates/dependency/reachability.js';
+import { applySymbolReachability } from '../gates/dependency/symbol-reachability.js';
 import type {
   BaselineEntry,
   DependencyGateContext,
@@ -342,8 +343,18 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
   // never a reason to suppress. Runs only when opted in and there is something
   // to triage.
   if (config.experimental.reachability && findings.some((f) => f.ruleId === 'advisories')) {
-    const reachability = await analyzeReachability({ root: dir, lockfile });
+    const wantSymbols = config.experimental.reachabilitySymbols === true;
+    const reachability = await analyzeReachability({
+      root: dir,
+      lockfile,
+      collectSymbols: wantSymbols,
+    });
     applyReachability(findings, reachability);
+    // Experimental function-level refinement: downgrade an advisory whose named
+    // function is provably never reached (first-party-only packages).
+    if (wantSymbols && reachability.status === 'ok') {
+      await applySymbolReachability(findings, { osv, lockfile, reachability });
+    }
   }
 
   const suppression = applyIgnores(findings, config.ignores, startedAt);

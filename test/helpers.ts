@@ -166,8 +166,14 @@ export function stubBlocklist(byKey: Record<string, string[]>): BlocklistClient 
   };
 }
 
-/** An OSV client that returns canned advisory matches. */
-export function stubOsv(matches: Record<string, string[]>): OsvClient {
+/**
+ * An OSV client that returns canned advisory matches (by `name@version`) and,
+ * optionally, canned full-record prose `details` (by advisory id).
+ */
+export function stubOsv(
+  matches: Record<string, string[]>,
+  vulnDetails: Record<string, string> = {},
+): OsvClient {
   return {
     queryBatch: async (packages) => {
       const result = new Map<string, { id: string }[]>();
@@ -178,6 +184,10 @@ export function stubOsv(matches: Record<string, string[]>): OsvClient {
       }
       return result;
     },
+    fetchVulnerability: async (id) => ({
+      id,
+      ...(vulnDetails[id] !== undefined ? { details: vulnDetails[id] } : {}),
+    }),
   };
 }
 

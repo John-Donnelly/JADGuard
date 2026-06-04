@@ -288,6 +288,29 @@ describe('HttpOsvClient', () => {
     expect(second.get('vuln@1.0.0')).toEqual([{ id: 'GHSA-x' }]);
     expect(second.has('clean@2.0.0')).toBe(false);
   });
+
+  it('fetches a full vulnerability record and memoises it', async () => {
+    let requests = 0;
+    const client = new HttpOsvClient({
+      fetchImpl: fakeFetch(() => {
+        requests++;
+        return new Response(
+          JSON.stringify({ id: 'GHSA-x', details: 'The function `foo` is vulnerable.' }),
+          { status: 200 },
+        );
+      }),
+    });
+    expect((await client.fetchVulnerability('GHSA-x'))?.details).toContain('foo');
+    await client.fetchVulnerability('GHSA-x');
+    expect(requests).toBe(1);
+  });
+
+  it('returns undefined when a record fetch fails (best-effort, never throws)', async () => {
+    const client = new HttpOsvClient({
+      fetchImpl: fakeFetch(() => new Response('', { status: 404 })),
+    });
+    expect(await client.fetchVulnerability('GHSA-missing')).toBeUndefined();
+  });
 });
 
 describe('readProjectInfo', () => {

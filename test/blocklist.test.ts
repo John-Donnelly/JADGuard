@@ -24,6 +24,7 @@ describe('OsvBlocklistClient', () => {
       queryBatch: async () => {
         throw new Error('OSV unreachable');
       },
+      fetchVulnerability: async () => undefined,
     });
     await expect(client.queryMalicious([{ name: 'x', version: '1.0.0' }])).rejects.toThrow();
   });
