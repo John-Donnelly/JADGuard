@@ -351,9 +351,9 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     });
     applyReachability(findings, reachability);
     // Experimental function-level refinement: downgrade an advisory whose named
-    // function is provably never reached (first-party-only packages).
+    // function is provably never reached across the reachable closure.
     if (wantSymbols && reachability.status === 'ok') {
-      await applySymbolReachability(findings, { osv, lockfile, reachability });
+      await applySymbolReachability(findings, { context, reachability });
     }
   }
 
