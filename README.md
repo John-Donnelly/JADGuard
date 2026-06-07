@@ -1,4 +1,4 @@
-# JAD Apps Guard
+﻿# JAD Apps Guard
 
 A supply-chain **deployment gate** for JavaScript/TypeScript projects. Guard
 inspects the resolved dependency set in your lockfile and exits non-zero when it
@@ -14,12 +14,15 @@ lockfiles, with output for humans, JSON, and SARIF (GitHub code scanning).
 
 ## Install
 
-```sh
-# one-off, no install
-npx @jadapps/guard audit
+JADGuard is not yet published to a package registry. Install directly from the
+repository:
 
-# or add it to a project
-npm install --save-dev @jadapps/guard
+```sh
+git clone https://github.com/John-Donnelly/JADGuard.git
+cd JADGuard
+npm install
+npm run build
+npm link          # puts `jadguard` on your PATH globally
 ```
 
 Requires Node.js >= 20.
@@ -330,8 +333,11 @@ they never exit the process — the verdict engine owns exit codes. See
 
 ## Programmatic use
 
+After building locally (see [Install](#install)), import from the `dist/` output
+directly:
+
 ```ts
-import { runScan } from '@jadapps/guard';
+import { runScan } from './dist/index.js'; // adjust path to your JADGuard checkout
 
 const { verdict } = await runScan({ dir: process.cwd(), scanType: 'audit' });
 if (verdict.status === 'fail') process.exitCode = 1;
@@ -340,8 +346,9 @@ if (verdict.status === 'fail') process.exitCode = 1;
 ## Security
 
 Guard is a security tool and is held to the standard it asks of others: zero
-install scripts, pinned and lockfiled dependencies, npm provenance on release,
-and it dogfoods its own gate in CI. Report vulnerabilities privately — see
+install scripts, pinned and lockfiled dependencies, and it dogfoods its own gate
+in CI. npm provenance will be enabled when the package is published to a
+registry. Report vulnerabilities privately — see
 [`SECURITY.md`](SECURITY.md).
 
 ## License
