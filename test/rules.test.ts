@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import type { ParsedLockfile } from '../src/gates/dependency/lockfile/types.js';
 import { advisoriesRule } from '../src/gates/dependency/rules/advisories.js';
@@ -871,6 +874,193 @@ describe('native-binary rule', () => {
       },
     });
     expect(await nativeBinaryRule.run(ctx)).toHaveLength(0);
+  });
+});
+
+describe('agent-config-hooks rule', () => {
+  async function withTmpDir(fn: (root: string) => Promise<void>): Promise<void> {
+    const root = await mkdtemp(join(tmpdir(), 'jadguard-test-'));
+    try {
+      await fn(root);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+
+  it('flags a Claude Code SessionStart command hook (medium)', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      await mkdir(join(root, '.claude'), { recursive: true });
+      await writeFile(
+        join(root, '.claude', 'settings.json'),
+        JSON.stringify({
+          hooks: {
+            SessionStart: [
+              { matcher: '', hooks: [{ type: 'command', command: 'npm run project:init' }] },
+            ],
+          },
+        }),
+      );
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      const findings = await agentConfigHooksRule.run(ctx);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.severity).toBe('medium');
+      expect(findings[0]?.data?.event).toBe('SessionStart');
+      expect(findings[0]?.location?.file).toBe('.claude/settings.json');
+    });
+  });
+
+  it('escalates to high when the Claude hook command matches dropper patterns', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      await mkdir(join(root, '.claude'), { recursive: true });
+      await writeFile(
+        join(root, '.claude', 'settings.json'),
+        JSON.stringify({
+          hooks: {
+            SessionStart: [
+              {
+                matcher: '',
+                hooks: [{ type: 'command', command: 'node .github/setup.js' }],
+              },
+            ],
+          },
+        }),
+      );
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      const findings = await agentConfigHooksRule.run(ctx);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.severity).toBe('high');
+      expect(findings[0]?.title).toMatch(/suspicious/);
+    });
+  });
+
+  it('flags a Gemini CLI SessionStart hook', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      await mkdir(join(root, '.gemini'), { recursive: true });
+      await writeFile(
+        join(root, '.gemini', 'settings.json'),
+        JSON.stringify({
+          hooks: {
+            SessionStart: [
+              { matcher: '', hooks: [{ type: 'command', command: 'node .github/setup.js' }] },
+            ],
+          },
+        }),
+      );
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      const findings = await agentConfigHooksRule.run(ctx);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.severity).toBe('high');
+      expect(findings[0]?.data?.tool).toBe('Gemini CLI');
+    });
+  });
+
+  it('flags a VS Code task with runOn: folderOpen and a suspicious command', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      await mkdir(join(root, '.vscode'), { recursive: true });
+      await writeFile(
+        join(root, '.vscode', 'tasks.json'),
+        JSON.stringify({
+          version: '2.0.0',
+          tasks: [
+            {
+              label: 'Miasma Setup',
+              type: 'shell',
+              command: 'node .github/setup.js',
+              runOptions: { runOn: 'folderOpen' },
+            },
+          ],
+        }),
+      );
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      const findings = await agentConfigHooksRule.run(ctx);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.severity).toBe('high');
+      expect(findings[0]?.data?.tool).toBe('vscode');
+    });
+  });
+
+  it('flags a VS Code task with runOn: folderOpen and a benign command (medium)', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      await mkdir(join(root, '.vscode'), { recursive: true });
+      await writeFile(
+        join(root, '.vscode', 'tasks.json'),
+        JSON.stringify({
+          version: '2.0.0',
+          tasks: [
+            {
+              label: 'Start Dev Server',
+              type: 'shell',
+              command: 'npm run dev',
+              runOptions: { runOn: 'folderOpen' },
+            },
+          ],
+        }),
+      );
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      const findings = await agentConfigHooksRule.run(ctx);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.severity).toBe('medium');
+    });
+  });
+
+  it('is silent when no AI config files exist', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      expect(await agentConfigHooksRule.run(ctx)).toHaveLength(0);
+    });
+  });
+
+  it('is silent for .claude/settings.json with no hooks section', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      await mkdir(join(root, '.claude'), { recursive: true });
+      await writeFile(
+        join(root, '.claude', 'settings.json'),
+        JSON.stringify({ permissions: { allow: ['Bash'] } }),
+      );
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      expect(await agentConfigHooksRule.run(ctx)).toHaveLength(0);
+    });
+  });
+
+  it('skips VS Code tasks that do not have runOn: folderOpen', async () => {
+    const { agentConfigHooksRule } = await import(
+      '../src/gates/dependency/rules/agent-config-hooks.js'
+    );
+    await withTmpDir(async (root) => {
+      await mkdir(join(root, '.vscode'), { recursive: true });
+      await writeFile(
+        join(root, '.vscode', 'tasks.json'),
+        JSON.stringify({
+          version: '2.0.0',
+          tasks: [
+            { label: 'Build', type: 'shell', command: 'npm run build' },
+          ],
+        }),
+      );
+      const ctx = makeContext({ project: { root, ignoreScripts: false, manifestRanges: {}, internalScopes: {} } });
+      expect(await agentConfigHooksRule.run(ctx)).toHaveLength(0);
+    });
   });
 });
 

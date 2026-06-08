@@ -2,6 +2,7 @@ import { runRules, type RunnerResult } from '../../engine/runner.js';
 import type { Severity } from '../../engine/severity.js';
 import { codeRuleCatalog, CODE_RULE_IDS } from '../code/index.js';
 import { advisoriesRule } from './rules/advisories.js';
+import { agentConfigHooksRule } from './rules/agent-config-hooks.js';
 import { bindingGypRule } from './rules/binding-gyp.js';
 import { bundledDepsRule } from './rules/bundled-deps.js';
 import { cooldownRule } from './rules/cooldown.js';
@@ -79,6 +80,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
   return [
     selfIntegrityRule,
     knownMalwareRule,
+    agentConfigHooksRule,
     installScriptsRule,
     integrityRule,
     gitDepRule,
