@@ -12,7 +12,7 @@ const AI_LIFECYCLE_HOOKS = new Set(['SessionStart', 'PreToolUse', 'PostToolUse',
  * fetch tools, or inline interpreter flags.
  */
 const DROPPER_CMD =
-  /\.github\/[\w.\-]+\.(?:js|mjs|cjs)\b|base64|atob\s*\(|Buffer\.from[^)]*,\s*['"]base64['"]|(?:^|\s)curl\b|(?:^|\s)wget\b|python(?:3)?\s+-c\b|node\s+-e\b|\/tmp\/|https?:\/\//;
+  /\.github\/[\w.-]+\.(?:js|mjs|cjs)\b|base64|atob\s*\(|Buffer\.from[^)]*,\s*['"]base64['"]|(?:^|\s)curl\b|(?:^|\s)wget\b|python(?:3)?\s+-c\b|node\s+-e\b|\/tmp\/|https?:\/\//;
 
 async function readJsonIfExists<T>(path: string): Promise<T | undefined> {
   try {
