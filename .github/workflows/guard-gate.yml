@@ -15,7 +15,7 @@ name: JADGuard supply-chain gate
 #                          flagged immediately.
 #
 # To enable opt-in rules (binding-gyp, native-binary, typosquat, …) add --all
-# to the `npx @jadapps/guard` invocations below.
+# to the `npx @jadapp/guard` invocations below.
 
 on:
   pull_request:
@@ -57,11 +57,11 @@ jobs:
         run: npm ci
 
       - name: Scan changed dependencies
-        run: npx @jadapps/guard scan
+        run: npx @jadapp/guard scan
 
       - name: Generate SARIF
         if: always()
-        run: npx @jadapps/guard scan --format sarif --output guard.sarif || true
+        run: npx @jadapp/guard scan --format sarif --output guard.sarif || true
 
       - name: Upload findings to code scanning
         # Fork PRs lack code-scanning write permission; skip the upload there.
@@ -92,11 +92,11 @@ jobs:
         run: npm ci
 
       - name: Audit all dependencies
-        run: npx @jadapps/guard audit
+        run: npx @jadapp/guard audit
 
       - name: Generate SARIF
         if: always()
-        run: npx @jadapps/guard audit --format sarif --output guard.sarif || true
+        run: npx @jadapp/guard audit --format sarif --output guard.sarif || true
 
       - name: Upload findings to code scanning
         if: always()

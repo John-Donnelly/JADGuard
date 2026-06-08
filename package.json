@@ -1,5 +1,5 @@
 {
-  "name": "@jadapps/guard",
+  "name": "@jadapp/guard",
   "version": "0.1.0",
   "description": "A supply-chain deployment gate for JavaScript/TypeScript projects — blocks installs and releases on malicious dependency indicators.",
   "keywords": [
@@ -18,20 +18,20 @@
   ],
   "license": "MIT",
   "author": "John Donnelly",
-  "homepage": "https://github.com/John-Donnelly/jadapps-guard#readme",
+  "homepage": "https://github.com/John-Donnelly/JADGuard#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/John-Donnelly/jadapps-guard.git"
+    "url": "git+https://github.com/John-Donnelly/JADGuard.git"
   },
   "bugs": {
-    "url": "https://github.com/John-Donnelly/jadapps-guard/issues"
+    "url": "https://github.com/John-Donnelly/JADGuard/issues"
   },
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "bin": {
-    "jadguard": "./dist/cli.js"
+    "jadguard": "dist/cli.js"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

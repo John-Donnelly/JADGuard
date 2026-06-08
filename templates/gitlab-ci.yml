@@ -10,8 +10,8 @@ jadguard:
     - npm ci
     # `audit` gates the whole resolved tree. To gate only newly added or
     # version-bumped dependencies, use `scan` instead:
-    #   npx --yes @jadapps/guard@latest scan
-    - npx --yes @jadapps/guard@latest audit
+    #   npx --yes @jadapp/guard@latest scan
+    - npx --yes @jadapp/guard@latest audit
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
