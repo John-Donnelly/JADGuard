@@ -38,9 +38,9 @@ jobs:
 
       # `audit` gates the whole resolved tree. For a faster pull-request check
       # that only inspects newly added/bumped dependencies, use instead:
-      #   npx --yes @jadapps/guard@latest scan --base origin/${{ github.base_ref }}
+      #   npx --yes @jadapp/guard@latest scan --base origin/${{ github.base_ref }}
       - name: Run the supply-chain gate
-        run: npx --yes @jadapps/guard@latest audit --format sarif --output jadguard.sarif
+        run: npx --yes @jadapp/guard@latest audit --format sarif --output jadguard.sarif
 
       - name: Upload findings to code scanning
         # Pin this to a commit SHA before adopting it in a hardened pipeline.

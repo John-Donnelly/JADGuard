@@ -335,7 +335,7 @@ the branch merges) and `jadguard audit` on every push to main, with SARIF
 upload to the GitHub Security tab in both cases.
 
 Copy it into your own repo's `.github/workflows/` and replace the
-`npx @jadapps/guard` invocations with `node path/to/dist/cli.js` until the
+`npx @jadapp/guard` invocations with `node path/to/dist/cli.js` until the
 package is published.
 
 ## Architecture
