@@ -2,6 +2,7 @@ import { runRules, type RunnerResult } from '../../engine/runner.js';
 import type { Severity } from '../../engine/severity.js';
 import { codeRuleCatalog, CODE_RULE_IDS } from '../code/index.js';
 import { advisoriesRule } from './rules/advisories.js';
+import { bindingGypRule } from './rules/binding-gyp.js';
 import { bundledDepsRule } from './rules/bundled-deps.js';
 import { cooldownRule } from './rules/cooldown.js';
 import { dependencyConfusionRule } from './rules/dependency-confusion.js';
@@ -41,6 +42,7 @@ export const NETWORK_RULE_IDS: ReadonlySet<string> = new Set([
   'manifest-tampering',
   'starjacking',
   'native-binary',
+  'binding-gyp',
   'tarball-anomaly',
   // capability-diff fetches the prior version's tarball, so it is network-bound.
   // It is intentionally not in CODE_RULE_IDS (it does not participate in the
@@ -65,6 +67,7 @@ export const OPTIONAL_RULE_IDS: readonly string[] = [
   'manifest-tampering',
   'starjacking',
   'native-binary',
+  'binding-gyp',
   'tarball-anomaly',
 ];
 
@@ -89,6 +92,7 @@ export function dependencyRuleCatalog(): DependencyRule[] {
     manifestTamperingRule,
     starjackingRule,
     nativeBinaryRule,
+    bindingGypRule,
     tarballAnomalyRule,
     cooldownRule,
     advisoriesRule,
