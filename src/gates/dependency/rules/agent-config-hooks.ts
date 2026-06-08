@@ -100,6 +100,107 @@ async function checkAiToolSettings(
   return findings;
 }
 
+/**
+ * Parses the YAML frontmatter block from an MDC file, returning it as a plain
+ * object alongside the rule body. Only handles scalar values (string, bool).
+ */
+function parseMdcFrontmatter(content: string): {
+  frontmatter: Record<string, unknown>;
+  body: string;
+} {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(content);
+  if (!match) return { frontmatter: {}, body: content };
+  const [, yaml = '', body = ''] = match;
+  const frontmatter: Record<string, unknown> = {};
+  for (const line of yaml.split(/\r?\n/)) {
+    const kv = /^([\w-]+)\s*:\s*(.*)$/.exec(line.trim());
+    if (!kv) continue;
+    const [, key, value] = kv;
+    frontmatter[key!] =
+      value === 'true' ? true : value === 'false' ? false : value ?? '';
+  }
+  return { frontmatter, body };
+}
+
+/**
+ * Scans `.cursor/rules/*.mdc` files for always-applied rules and dropper-like
+ * body content. Cursor rules are prompt instructions injected into AI sessions
+ * rather than executed shell commands, so this is a prompt-injection vector
+ * rather than direct code execution — but one that can direct the AI to run
+ * arbitrary tool calls.
+ *
+ * Severity:
+ *   - high   — alwaysApply: true AND body contains dropper patterns
+ *   - medium — alwaysApply: true (auto-injected, needs review), OR body has
+ *              dropper patterns without alwaysApply
+ */
+async function checkCursorRules(
+  root: string,
+  rel: (p: string) => string,
+  ruleId: string,
+): Promise<Finding[]> {
+  let entries: string[];
+  try {
+    entries = await readdir(join(root, '.cursor', 'rules'));
+  } catch {
+    return [];
+  }
+
+  const findings: Finding[] = [];
+  for (const filename of entries.filter((f) => f.endsWith('.mdc'))) {
+    let content: string;
+    try {
+      content = await readFile(join(root, '.cursor', 'rules', filename), 'utf8');
+    } catch {
+      continue;
+    }
+
+    const { frontmatter, body } = parseMdcFrontmatter(content);
+    const alwaysApply = frontmatter.alwaysApply === true;
+    const suspiciousBody = DROPPER_CMD.test(body);
+
+    if (!alwaysApply && !suspiciousBody) continue;
+
+    const fileRel = rel(join(root, '.cursor', 'rules', filename));
+    const sev: 'high' | 'medium' = alwaysApply && suspiciousBody ? 'high' : 'medium';
+
+    findings.push({
+      ruleId,
+      severity: sev,
+      title:
+        sev === 'high'
+          ? `${fileRel} is an always-applied Cursor rule with suspicious command content`
+          : alwaysApply
+            ? `${fileRel} is an always-applied Cursor rule`
+            : `${fileRel} contains suspicious command patterns`,
+      detail:
+        sev === 'high'
+          ? 'This Cursor rule has `alwaysApply: true` (injected into every AI interaction in ' +
+            'the repo) and its body contains patterns matching a dropper payload: command ' +
+            'references, external URLs, or base64. The Miasma worm plants always-applied ' +
+            'Cursor rules to inject malicious tool-call instructions into every coding session.'
+          : alwaysApply
+            ? 'This Cursor rule has `alwaysApply: true`, meaning it is automatically injected ' +
+              'into every AI coding interaction in the repository. While this may be legitimate ' +
+              'project guidance, Miasma uses always-applied rules to persist prompt-injection ' +
+              'instructions across sessions.'
+            : 'This Cursor rule body contains patterns matching a dropper payload (command ' +
+              'references, URLs, or base64). Even without `alwaysApply`, a rule that directs ' +
+              'the AI to run external commands is a prompt-injection risk.',
+      location: { file: fileRel },
+      remediation:
+        sev === 'high'
+          ? 'Treat this as a likely compromise. Remove or audit the rule, check any referenced ' +
+            'command targets, and rotate credentials that may have been accessed.'
+          : 'Confirm this rule was intentionally added by a project maintainer. If unexpected, ' +
+            `remove it and audit recent commits to \`${fileRel}\`.`,
+      data: { alwaysApply, suspiciousBody, filename },
+      suppressible: true,
+    });
+  }
+  return findings;
+}
+
 async function checkVscodeTasks(
   root: string,
   rel: (p: string) => string,
@@ -159,9 +260,10 @@ async function checkVscodeTasks(
  * that match the Miasma worm's repo-hijacking pattern (June 2026).
  *
  * Checked files:
- *  - `.claude/settings.json`  — Claude Code SessionStart / lifecycle hooks
- *  - `.gemini/settings.json`  — Gemini CLI lifecycle hooks
- *  - `.vscode/tasks.json`     — VS Code shell tasks with `runOn: "folderOpen"`
+ *  - `.claude/settings.json`    — Claude Code SessionStart / lifecycle hooks
+ *  - `.gemini/settings.json`    — Gemini CLI lifecycle hooks
+ *  - `.vscode/tasks.json`       — VS Code shell tasks with `runOn: "folderOpen"`
+ *  - `.cursor/rules/*.mdc`      — always-applied Cursor rules (prompt-injection vector)
  *
  * Unlike all other dependency-gate rules this one iterates no packages — it
  * runs once per scan against the project root. A finding with a suspicious
@@ -171,19 +273,20 @@ async function checkVscodeTasks(
 export const agentConfigHooksRule: DependencyRule = {
   id: 'agent-config-hooks',
   description:
-    'Scans project AI-tool config files (.claude, .gemini, .vscode) for auto-executing hooks matching the Miasma repo-hijacking pattern.',
+    'Scans project AI-tool config files (.claude, .gemini, .vscode, .cursor/rules) for auto-executing hooks and prompt-injection rules matching the Miasma repo-hijacking pattern.',
   defaultSeverity: 'high',
 
   async run(ctx) {
     const root = ctx.project.root;
     const rel = (p: string) => relative(root, p).replace(/\\/g, '/');
 
-    const [claude, gemini, vscode] = await Promise.all([
+    const [claude, gemini, vscode, cursor] = await Promise.all([
       checkAiToolSettings(root, rel, '.claude/settings.json', 'Claude Code', 'agent-config-hooks'),
       checkAiToolSettings(root, rel, '.gemini/settings.json', 'Gemini CLI', 'agent-config-hooks'),
       checkVscodeTasks(root, rel, 'agent-config-hooks'),
+      checkCursorRules(root, rel, 'agent-config-hooks'),
     ]);
 
-    return [...claude, ...gemini, ...vscode];
+    return [...claude, ...gemini, ...vscode, ...cursor];
   },
 };
