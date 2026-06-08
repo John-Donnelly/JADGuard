@@ -1,9 +1,10 @@
-﻿# JAD Apps Guard
+# JAD Apps Guard
 
 A supply-chain **deployment gate** for JavaScript/TypeScript projects. Guard
 inspects the resolved dependency set in your lockfile and exits non-zero when it
 finds a malicious or risky indicator — so a poisoned dependency is blocked
-before it reaches a build or release.
+before it reaches a build or release. It also scans the project's own AI-tool
+config files for the hook-hijacking pattern used by the Miasma worm.
 
 It runs as a portable CLI (`jadguard`) across **npm, pnpm, yarn and Bun**
 lockfiles, with output for humans, JSON, and SARIF (GitHub code scanning).
@@ -69,7 +70,7 @@ turns on the **registry-native** cooldown and lifecycle-script lockdown —
 `min-release-age` (npm), `minimumReleaseAge` (pnpm/bun), or `npmMinimalAgeGate`
 (yarn), each in its own key and unit — folding in your `cooldown.exclude`
 patterns where the manager supports an exclusion list. Guard configures the
-ecosystem's own defense rather than only duplicating it; Guard's `cooldown` rule
+ecosystem's own defence rather than only duplicating it; Guard's `cooldown` rule
 stays the fail-closed enforcement floor (native gates are opt-in and bypassable).
 The command only prints — it never writes or clobbers files.
 
@@ -83,16 +84,17 @@ The command only prints — it never writes or clobbers files.
 | `--fail-on <severity>` | Lowest severity that fails the verdict               |
 | `--cooldown-days <n>`  | Cooldown window for the `cooldown` rule              |
 | `--base <ref>`         | Git ref to diff against for `scan` (default `HEAD`)  |
-| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`, `provenance`, `maintainer`, `bundled-deps`, `manifest-confusion`, `manifest-tampering`, `starjacking`, `native-binary`, `tarball-anomaly`, and the code-gate rules) |
-| `--code`               | Enable the AST code-gate rules (off by default in v0.x)               |
+| `--all`                | Also run the opt-in heuristic rules                  |
+| `--offline`            | Skip network-dependent rules (`cooldown`, `advisories`, `provenance`, `maintainer`, `bundled-deps`, `manifest-confusion`, `manifest-tampering`, `starjacking`, `native-binary`, `binding-gyp`, `tarball-anomaly`, and the code-gate rules) |
+| `--code`               | Enable the AST code-gate rules (off by default in v0.x) |
 
 ### Exit codes
 
-| Code | Meaning                          |
-| ---- | -------------------------------- |
-| `0`  | Passing verdict                  |
+| Code | Meaning                             |
+| ---- | ----------------------------------- |
+| `0`  | Passing verdict                     |
 | `1`  | Failing verdict, or a runtime error |
-| `2`  | Invalid CLI usage                |
+| `2`  | Invalid CLI usage                   |
 
 ## The dependency gate
 
@@ -100,36 +102,52 @@ A per-rule reference page exists for each rule under
 [`docs/rules/`](docs/rules/README.md) — what it catches, false-positive
 modes, and remediation guidance.
 
-| Rule                    | Default  | Network | What it catches                                                                       |
-| ----------------------- | -------- | :-----: | ------------------------------------------------------------------------------------- |
-| `known-malware`         | critical |    —    | Exact `name@version` match against the bundled known-malware blocklist. **Non-suppressible.** Works offline. |
-| `install-scripts`       | high\*   |    —    | Dependencies that declare install/lifecycle scripts.                                  |
-| `integrity`             | medium   |    —    | Registry deps missing or weakly pinned by integrity hash.                             |
-| `git-dep`               | medium   |    —    | Dependencies resolved from git rather than the public registry.                       |
-| `unpinned-ranges`       | low      |    —    | Floating `package.json` ranges (caret, tilde, dist-tag, wildcard).                    |
-| `dependency-confusion`  | high     |    —    | Internal-scoped deps that resolved from a non-internal registry host.                 |
-| `typosquat`             | medium   |    —    | Names within edit-distance 2 of a popular package. **Experimental, opt-in.**\*\*\*    |
-| `provenance`            | low      |    ✓    | Registry deps with no Sigstore signature or SLSA provenance.\*\*                      |
-| `maintainer`            | medium   |    ✓    | Versions published by a maintainer with no prior history on the package.              |
-| `bundled-deps`          | medium   |    ✓    | Packages that bundle transitive deps inside their own tarball.                        |
-| `manifest-confusion`    | medium   |    ✓    | Lockfile and registry disagreement on declared install scripts.                       |
-| `manifest-tampering`    | medium   |    ✓    | Tarball package.json install scripts that disagree with the registry.                 |
-| `starjacking`           | medium   |    ✓    | Declared `repository.url` does not match the package's identity.                      |
-| `native-binary`         | medium   |    ✓    | Native binaries shipped without `os`/`cpu` declared (ELF, PE, Mach-O detection).      |
-| `tarball-anomaly`       | medium   |    ✓    | Extracted tarball is at least 5× the median of the package's recent versions.         |
-| `cooldown`              | medium   |    ✓    | Versions published inside the cooldown window — too new to be vetted.                 |
-| `advisories`            | high     |    ✓    | Versions with a known security advisory (via OSV). Optional **reachability triage**.\*\*\*\* |
-| `self-integrity`        | critical |    —    | Configuration that attempts to disable Guard's own protections.                       |
+### Default-on rules
+
+These run with no configuration. They are deterministic, near-zero false
+positive, and do not require tarball access unless noted.
+
+| Rule                   | Severity  | Network | What it catches                                                                              |
+| ---------------------- | --------- | :-----: | -------------------------------------------------------------------------------------------- |
+| `self-integrity`       | critical  |    —    | Configuration that attempts to disable Guard's own protections. **Non-suppressible.**        |
+| `known-malware`        | critical  |    —    | Exact `name@version` match against the bundled known-malware blocklist. **Non-suppressible.** Works offline. |
+| `agent-config-hooks`   | high      |    —    | AI-tool and editor config files in the project repo with auto-executing hooks or prompt-injection rules (`.claude/settings.json`, `.gemini/settings.json`, `.vscode/tasks.json`, `.cursor/rules/*.mdc`). Catches the Miasma repo-hijacking pattern. |
+| `install-scripts`      | high\*    |    —    | Dependencies that declare install/lifecycle scripts.                                         |
+| `dependency-confusion` | high      |    —    | Internal-scoped deps that resolved from a non-internal registry host.                        |
+| `advisories`           | high      |    ✓    | Versions with a known security advisory (via OSV). Optional reachability triage.\*\*\*\*    |
+| `integrity`            | medium    |    —    | Registry deps missing or weakly pinned by integrity hash.                                    |
+| `git-dep`              | medium    |    —    | Dependencies resolved from git rather than the public registry.                              |
+| `cooldown`             | medium    |    ✓    | Versions published inside the cooldown window — too new to be vetted.                       |
+| `unpinned-ranges`      | low       |    —    | Floating `package.json` ranges (caret, tilde, dist-tag, wildcard).                          |
 
 \* `install-scripts` reports `low` instead of `high` when the project enables
 `ignore-scripts`, since a flagged script will not actually run on install.
+
+### Opt-in rules
+
+Off by default to keep the zero-config signal clean. Enable per-rule in config
+or all at once with `--all`. These rules require tarball downloads.
+
+| Rule                   | Severity  | What it catches                                                                                 |
+| ---------------------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `binding-gyp`          | medium/high |  Packages that ship a `binding.gyp` without declaring `os`/`cpu` in the manifest (Phantom Gyp attack surface). Escalates to `high` when the gyp file defines `action` targets — arbitrary commands not blocked by `--ignore-scripts`. |
+| `native-binary`        | medium    | Native binaries shipped without `os`/`cpu` declared (ELF, PE, Mach-O detection).              |
+| `tarball-anomaly`      | medium    | Extracted tarball is at least 5× the median of the package's recent versions.                  |
+| `manifest-tampering`   | medium    | Tarball `package.json` install scripts that disagree with the registry.                        |
+| `manifest-confusion`   | medium    | Lockfile and registry disagreement on declared install scripts.                                 |
+| `starjacking`          | medium    | Declared `repository.url` does not match the package's identity.                               |
+| `maintainer`           | medium    | Versions published by a maintainer with no prior history on the package.                       |
+| `bundled-deps`         | medium    | Packages that bundle transitive deps inside their own tarball.                                 |
+| `provenance`           | low       | Registry deps with no Sigstore signature or SLSA provenance.\*\*                              |
+| `typosquat`            | medium    | Names within edit-distance 2 of a popular package. **Experimental, opt-in.**\*\*\*            |
 
 \*\* For `provenance`, absence is the signal — presence is **not** proof. Valid
 SLSA Level 2 provenance has been forged in the wild via credential reuse, so a
 provenance pass is one input among many, not a clean bill of health.
 
-\*\*\* `typosquat` is gated behind `experimental.typosquat: true` in config until
-it clears the production false-positive corpus. Enable it explicitly:
+\*\*\* `typosquat` is additionally gated behind `experimental.typosquat: true`
+in config until it clears the production false-positive corpus. Enable it
+explicitly:
 
 ```json
 { "experimental": { "typosquat": true } }
@@ -173,13 +191,15 @@ on a single, confidently-named symbol and is best-effort triage; it requires
 
 With no config, Guard runs the **deterministic / near-zero-false-positive**
 rules plus accurate OSV `advisories` — the install-and-it-works set:
-`self-integrity`, `known-malware`, `install-scripts`, `integrity`, `git-dep`,
-`unpinned-ranges`, `dependency-confusion`, `cooldown`, `advisories`.
+`self-integrity`, `known-malware`, `agent-config-hooks`, `install-scripts`,
+`integrity`, `git-dep`, `unpinned-ranges`, `dependency-confusion`, `cooldown`,
+`advisories`.
 
-Eight heuristic **"review this"** rules are **off by default** to keep the
-out-of-box signal clean: `provenance`, `maintainer`, `bundled-deps`,
-`manifest-confusion`, `manifest-tampering`, `starjacking`, `native-binary`,
-`tarball-anomaly`. Turn them on per-rule, or all at once:
+Ten heuristic **"review this"** rules are **off by default** to keep the
+out-of-box signal clean: `binding-gyp`, `native-binary`, `tarball-anomaly`,
+`manifest-tampering`, `manifest-confusion`, `starjacking`, `maintainer`,
+`bundled-deps`, `provenance`, `typosquat`. Turn them on per-rule, or all at
+once:
 
 ```json
 { "rules": { "maintainer": { "enabled": true } } }
@@ -210,20 +230,20 @@ Or in config:
 { "codeGate": { "enabled": true } }
 ```
 
-| Rule              | Default               | What it catches                                                                |
-| ----------------- | --------------------- | ------------------------------------------------------------------------------ |
-| `known-ioc`       | **critical** / high   | Installed files matching a known campaign IOC: SHA-256 hash (critical, non-suppressible), dropper filename, or payload string. |
-| `dynamic-exec`    | medium                | `eval(...)`, `new Function(...)`, `vm.runInThisContext(...)` in installed code.|
-| `process-spawn`   | medium                | `child_process` import paired with `spawn` / `exec` / `fork` primitives.       |
-| `obfuscation`     | medium                | Base64/hex density, minified bundles, and the javascript-obfuscator `_0x…` self-decoder fingerprint. |
-| `secret-access`   | medium                | Reads of NPM_TOKEN / GITHUB_TOKEN / AWS_\* / VAULT_\*, credential paths, cloud IMDS (169.254.169.254), or TruffleHog. |
-| `network-exfil`   | medium                | Outbound HTTP imports paired with calls (http/https or axios/got/undici/…).    |
-| `ci-tampering`    | medium                | CI workflow paths (or `.claude/settings.json`) + fs write, `git push`, `toJSON(secrets)`, or `pull_request_target`. |
+| Rule              | Default                 | What it catches                                                                |
+| ----------------- | ----------------------- | ------------------------------------------------------------------------------ |
+| `known-ioc`       | **critical** / high     | Installed files matching a known campaign IOC: SHA-256 hash (critical, non-suppressible), dropper filename, or payload string. |
+| `dynamic-exec`    | medium                  | `eval(...)`, `new Function(...)`, `vm.runInThisContext(...)` in installed code. |
+| `process-spawn`   | medium                  | `child_process` import paired with `spawn` / `exec` / `fork` primitives.       |
+| `obfuscation`     | medium                  | Base64/hex density, minified bundles, and the javascript-obfuscator `_0x…` self-decoder fingerprint. |
+| `secret-access`   | medium                  | Reads of NPM_TOKEN / GITHUB_TOKEN / AWS\_\* / VAULT\_\*, credential paths, cloud IMDS (169.254.169.254), or TruffleHog. |
+| `network-exfil`   | medium                  | Outbound HTTP imports paired with calls (http/https or axios/got/undici/…).    |
+| `ci-tampering`    | medium                  | CI workflow paths (or `.claude/settings.json`) + fs write, `git push`, `toJSON(secrets)`, or `pull_request_target`. |
 | `code-gate-chain` | **high** / **critical** | ≥2 of the above in the same file (`high`); ≥3 (`critical`). Synthetic, emitted by the chain detector. |
-| `capability-diff` | medium / high / **critical** | An **update** that introduces a capability (network / process / filesystem / env-secret / dynamic-exec) the prior version lacked. **Experimental, `scan`-only, opt-in.**\*\*\*\* |
+| `capability-diff` | medium / high / **critical** | An **update** that introduces a capability (network / process / filesystem / env-secret / dynamic-exec) the prior version lacked. **Experimental, `scan`-only, opt-in.**\*\*\*\*\* |
 
-\*\*\*\* `capability-diff` is gated behind `experimental.capabilityDiff: true` and
-only runs on `scan` (it diffs each changed dependency against its pre-update
+\*\*\*\*\* `capability-diff` is gated behind `experimental.capabilityDiff: true`
+and only runs on `scan` (it diffs each changed dependency against its pre-update
 version from the git baseline — `audit` has no baseline). Fewer than 2% of
 version bumps introduce a new capability, so an unexpected one is a strong,
 low-noise malicious-update signal; severity scales with the shape of the added
@@ -307,24 +327,35 @@ Node.js project at all.
 
 ## Continuous integration
 
-Ready-to-copy templates live in [`templates/`](templates/):
+A ready-to-copy GitHub Actions workflow lives at
+[`.github/workflows/guard-gate.yml`](.github/workflows/guard-gate.yml). It
+runs `jadguard scan` on every pull request (fast, changed-deps-only — closes
+the timing gap so a Miasma-planted hook or Phantom Gyp payload is caught before
+the branch merges) and `jadguard audit` on every push to main, with SARIF
+upload to the GitHub Security tab in both cases.
 
-- [`github-actions.yml`](templates/github-actions.yml) — GitHub Actions workflow with SARIF upload
-- [`gitlab-ci.yml`](templates/gitlab-ci.yml) — GitLab CI job
-- [`pre-commit`](templates/pre-commit) — git pre-commit hook
+Copy it into your own repo's `.github/workflows/` and replace the
+`npx @jadapps/guard` invocations with `node path/to/dist/cli.js` until the
+package is published.
 
 ## Architecture
 
-Guard is a small rule engine driving a single gate:
+Guard is a small rule engine driving two gates:
 
 - `src/engine/` — rule, finding and verdict types; the rule-agnostic runner,
   severity model, and config-driven suppression.
 - `src/config/` — config schema, validation, and file loading.
 - `src/gates/dependency/` — lockfile parsers (npm, pnpm, yarn classic & berry,
-  and Bun's text `bun.lock`) and the dependency rule catalog.
-- `src/integrations/` — registry, OSV, cache, git, and package-manager clients.
+  and Bun's text `bun.lock`) and the dependency rule catalog. Most rules iterate
+  `ctx.inScope` (resolved packages); `agent-config-hooks` is the exception — it
+  runs once per scan against the project root via `fs/promises`.
+- `src/gates/code/` — the opt-in code gate: tarball extraction, JS/MJS/CJS
+  source scanning, and the cross-rule chain detector.
+- `src/integrations/` — registry, OSV, cache, git, tarball, and package-manager
+  clients.
 - `src/reporters/` — `pretty`, `json`, and `sarif` output.
-- `src/commands/` + `src/cli.ts` — the `scan` / `audit` / `init` commands.
+- `src/commands/` + `src/cli.ts` — the `scan` / `audit` / `init` / `install` /
+  `add` / `allow` / `harden` / `verify-signatures` commands.
 
 Rules are pure: given the same inputs they produce the same `Finding[]`, and
 they never exit the process — the verdict engine owns exit codes. See
