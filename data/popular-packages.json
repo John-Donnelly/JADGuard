@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "generatedAt": "2026-06-04",
+  "generatedAt": "2026-06-08",
   "source": "npm-high-impact (top 1000 by dependents + downloads) merged with prior entries; refresh via scripts/refresh-popular.mjs",
   "packages": [
     "@ampproject/remapping",
