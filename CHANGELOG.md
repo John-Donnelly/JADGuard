@@ -188,7 +188,12 @@ The project has not yet been published to npm; all changes are unreleased.
   (advisories, cooldown, provenance) so a newly published CVE against one of
   Guard's own dependencies surfaces without requiring a code change to trigger CI.
 - **Scheduled feed refresh** (#13, #14) — automated refresh of the popular-packages
-  and threat-feed bundles, with CI monitoring across all three feeds.
+  and threat-feed bundles, with CI monitoring across all three feeds. The
+  known-malware blocklist is sourced from the Datadog
+  malicious-software-packages-dataset npm manifest merged with hand-curated IOCs.
+  To stay within the bundle size budget the feed is capped (default 10k entries)
+  with a tiered priority — hand-curated incidents and compromised-version entries
+  for real packages are always kept; wholly-malicious typosquats fill the rest.
 - **`self-integrity` rule** — non-suppressible check that detects configuration
   attempting to disable or downgrade Guard's own protections (tamper-evident
   gate).
