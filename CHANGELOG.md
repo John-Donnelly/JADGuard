@@ -2,9 +2,19 @@
 
 All notable changes to JAD Apps Guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-The project has not yet been published to npm; all changes are unreleased.
 
 ---
+
+## [0.1.1] - 2026-06-15
+
+### Fixed
+
+- **Threat-feed refresh** — corrected the Datadog npm manifest URL (the dataset
+  moved it under `samples/`), which had been failing the scheduled refresh with
+  HTTP 404. The bundled known-malware blocklist is now size-bounded (default 10k
+  entries) with a tiered priority: hand-curated incidents and compromised-version
+  entries for real packages are always kept; wholly-malicious typosquats fill the
+  remainder. Bundled feed regenerated to 10,000 entries (~949 KB).
 
 ## [Unreleased]
 
@@ -198,4 +208,5 @@ The project has not yet been published to npm; all changes are unreleased.
   attempting to disable or downgrade Guard's own protections (tamper-evident
   gate).
 
-[Unreleased]: https://github.com/John-Donnelly/JADGuard/commits/main
+[Unreleased]: https://github.com/John-Donnelly/JADGuard/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/John-Donnelly/JADGuard/compare/v0.1.0...v0.1.1

@@ -1,6 +1,6 @@
 {
   "name": "@jadapp/guard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A supply-chain deployment gate for JavaScript/TypeScript projects — blocks installs and releases on malicious dependency indicators.",
   "keywords": [
     "security",
