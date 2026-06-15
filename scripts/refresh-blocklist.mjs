@@ -14,11 +14,14 @@
  * tagged `datadog-guarddog`) are PRESERVED and merged, so notable campaigns we
  * pinned by hand are never dropped by a refresh.
  *
- * Size note (`STRATEGY.private.md §4/§6`): the full Datadog npm set is large.
- * This script logs the resulting entry count and approximate byte size; if a
- * refresh PR pushes the bundle past the package's size budget, switch the
- * default to the online OSSF/OSV path (roadmap Phase 9.1) and keep only a
- * recent + high-severity core bundled. Use `--max=<n>` to cap entries.
+ * Size note (`STRATEGY.private.md §4/§6`): the full Datadog npm set is large
+ * (~45k entries / ~4 MB), too big to bundle. By default we cap at `DEFAULT_MAX`
+ * entries, keeping a recent + high-severity core: every hand-curated incident,
+ * then every Datadog compromised-version entry (real supply-chain attacks),
+ * then wholly-malicious packages until the cap. The script logs the kept count,
+ * approximate byte size, and exactly what each tier dropped. Use `--max=<n>` to
+ * change the cap or `--max=Infinity` to bundle the whole set; the online
+ * OSSF/OSV path remains the longer-term option (roadmap Phase 9.1).
  *
  * Usage:
  *   node scripts/refresh-blocklist.mjs [--date=YYYY-MM-DD] [--max=N] [--dry-run]
@@ -34,12 +37,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const BLOCKLIST_PATH = join(__dirname, '..', 'data', 'blocklist.json');
 
 const DATADOG_NPM_MANIFEST =
-  'https://raw.githubusercontent.com/DataDog/malicious-software-packages-dataset/main/npm/manifest.json';
+  'https://raw.githubusercontent.com/DataDog/malicious-software-packages-dataset/main/samples/npm/manifest.json';
 
 const DATADOG_CAMPAIGN = 'datadog-guarddog';
 
+// Default size-budget cap (STRATEGY.private.md §4/§6). The full Datadog npm set
+// is ~45k entries / ~4 MB, too large to bundle. We keep a recent + high-severity
+// core: all hand-curated incidents + all compromised-version entries, then fill
+// the rest with wholly-malicious packages up to this cap. Override with
+// `--max=<n>`, or `--max=Infinity` to bundle the whole set.
+const DEFAULT_MAX = 10000;
+
 function parseArgs(argv) {
-  const args = { dryRun: false, max: Infinity, date: undefined };
+  const args = { dryRun: false, max: DEFAULT_MAX, date: undefined };
   for (const arg of argv) {
     if (arg === '--dry-run') args.dryRun = true;
     else if (arg.startsWith('--max=')) args.max = Number(arg.slice('--max='.length));
@@ -91,6 +101,59 @@ async function fetchDatadog() {
   return entries;
 }
 
+/**
+ * Tier of a merged entry, lowest = highest priority to keep under the cap:
+ *   0 — hand-curated incidents (recent, pinned by hand): never dropped.
+ *   1 — Datadog compromised versions of legitimate packages (a `versions`
+ *       array): real supply-chain attacks devs actually install.
+ *   2 — Datadog wholly-malicious packages (all versions): typosquats /
+ *       dependency-confusion PoCs; the bulk of the set, trimmed first.
+ */
+function tierOf(entry) {
+  if (entry.campaign !== DATADOG_CAMPAIGN) return 0;
+  return entry.versions ? 1 : 2;
+}
+
+const TIER_LABELS = ['curated', 'compromised', 'wholly-malicious'];
+
+/**
+ * Caps `merged` to `max` entries by descending tier value (see `tierOf`).
+ * Tier 0 (curated) is kept in full even if it alone exceeds `max` — we never
+ * drop a hand-pinned IOC to satisfy a size budget. Logs exactly what was
+ * dropped so a cap never silently hides coverage.
+ */
+function capByPriority(merged, max) {
+  if (!Number.isFinite(max) || merged.length <= max) return merged;
+  const tiers = [[], [], []];
+  for (const entry of merged) tiers[tierOf(entry)].push(entry);
+
+  const kept = [...tiers[0]];
+  if (kept.length > max) {
+    console.warn(
+      `--max=${max} is below the ${kept.length} hand-curated entries; ` +
+        `keeping all curated and dropping every Datadog entry.`,
+    );
+  }
+  for (let t = 1; t < tiers.length; t++) {
+    const tier = tiers[t];
+    const room = max - kept.length;
+    if (room <= 0) {
+      console.warn(`Dropped all ${tier.length} ${TIER_LABELS[t]} entries (cap reached).`);
+      continue;
+    }
+    if (tier.length <= room) {
+      kept.push(...tier);
+    } else {
+      kept.push(...tier.slice(0, room));
+      console.warn(
+        `Tier ${TIER_LABELS[t]}: kept ${room} of ${tier.length}, ` +
+          `dropped ${tier.length - room} (cap reached).`,
+      );
+    }
+  }
+  return kept.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** Merges entries by lowercased name; an all-versions entry wins. */
 function mergeEntries(...lists) {
   const byName = new Map();
@@ -133,10 +196,13 @@ async function main() {
   const datadog = await fetchDatadog();
   console.log(`Datadog manifest yielded ${datadog.length} npm entries.`);
 
-  let merged = mergeEntries(curated, datadog);
-  if (Number.isFinite(args.max) && merged.length > args.max) {
-    console.warn(`Capping ${merged.length} entries to --max=${args.max}.`);
-    merged = merged.slice(0, args.max);
+  const allMerged = mergeEntries(curated, datadog);
+  const merged = capByPriority(allMerged, args.max);
+  if (merged.length < allMerged.length) {
+    console.warn(
+      `Capped ${allMerged.length} entries to ${merged.length} (--max=${args.max}); ` +
+        `kept curated + compromised-version entries first.`,
+    );
   }
 
   // Re-shape each entry to a stable key order for a clean diff.
