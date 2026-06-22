@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "generatedAt": "2026-06-15",
+  "generatedAt": "2026-06-22",
   "source": "Datadog malicious-software-packages-dataset (npm, human-triaged) merged with hand-curated incident IOCs; refresh via scripts/refresh-blocklist.mjs",
   "packages": [
     {
@@ -6332,6 +6332,10 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "@ignacionunez91/keccak24",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "@ikarem/telemetry",
       "campaign": "datadog-guarddog"
     },
@@ -6943,6 +6947,993 @@
       "versions": [
         "1.0.1",
         "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/acp",
+      "versions": [
+        "0.2.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/agent-browser",
+      "versions": [
+        "0.3.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/agent-builder",
+      "versions": [
+        "1.0.42"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/agentcore",
+      "versions": [
+        "0.2.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/agentfs",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/ai-sdk",
+      "versions": [
+        "1.4.6"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/arize",
+      "versions": [
+        "1.2.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/arthur",
+      "versions": [
+        "0.3.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/astra",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-auth0",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-better-auth",
+      "versions": [
+        "1.0.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-clerk",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-cloud",
+      "versions": [
+        "1.1.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-firebase",
+      "versions": [
+        "1.0.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-okta",
+      "versions": [
+        "0.0.5"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-studio",
+      "versions": [
+        "1.2.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-supabase",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/auth-workos",
+      "versions": [
+        "1.5.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/azure",
+      "versions": [
+        "0.2.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/blaxel",
+      "versions": [
+        "0.4.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/braintrust",
+      "versions": [
+        "1.1.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/brightdata",
+      "versions": [
+        "0.2.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/browser-firecrawl",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/browser-viewer",
+      "versions": [
+        "0.1.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/chroma",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/claude",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/clickhouse",
+      "versions": [
+        "1.10.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/client-js",
+      "versions": [
+        "1.24.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/cloud",
+      "versions": [
+        "0.1.24"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/cloudflare",
+      "versions": [
+        "1.4.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/cloudflare-d1",
+      "versions": [
+        "1.0.7"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/codemod",
+      "versions": [
+        "1.0.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/convex",
+      "versions": [
+        "1.2.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/core",
+      "versions": [
+        "1.42.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/couchbase",
+      "versions": [
+        "1.0.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/cursor",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/dane",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/datadog",
+      "versions": [
+        "1.2.5"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/daytona",
+      "versions": [
+        "0.4.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/deployer",
+      "versions": [
+        "1.42.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/deployer-cloud",
+      "versions": [
+        "1.42.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/deployer-cloudflare",
+      "versions": [
+        "1.1.44"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/deployer-netlify",
+      "versions": [
+        "1.1.20"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/deployer-vercel",
+      "versions": [
+        "1.1.38"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/docker",
+      "versions": [
+        "0.3.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/dsql",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/duckdb",
+      "versions": [
+        "1.4.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/dynamodb",
+      "versions": [
+        "1.0.9"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/e2b",
+      "versions": [
+        "0.3.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/editor",
+      "versions": [
+        "0.11.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/elasticsearch",
+      "versions": [
+        "1.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/engine",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/evals",
+      "versions": [
+        "1.3.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/express",
+      "versions": [
+        "1.3.31"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/fastembed",
+      "versions": [
+        "1.1.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/fastify",
+      "versions": [
+        "1.3.31"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/files-sdk",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/gcs",
+      "versions": [
+        "0.2.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/github-signals",
+      "versions": [
+        "0.1.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/google-cloud-pubsub",
+      "versions": [
+        "1.0.6"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/google-drive",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/hono",
+      "versions": [
+        "1.4.26"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/inngest",
+      "versions": [
+        "1.5.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/koa",
+      "versions": [
+        "1.5.14"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/laminar",
+      "versions": [
+        "1.2.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/lance",
+      "versions": [
+        "1.0.7"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/langfuse",
+      "versions": [
+        "1.3.6"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/langsmith",
+      "versions": [
+        "1.2.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/libsql",
+      "versions": [
+        "1.13.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/loggers",
+      "versions": [
+        "1.1.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/longmemeval",
+      "versions": [
+        "1.0.50"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/mcp",
+      "versions": [
+        "1.10.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/mcp-docs-server",
+      "versions": [
+        "1.1.47"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/mcp-registry-registry",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/mem0",
+      "versions": [
+        "0.1.14"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/memory",
+      "versions": [
+        "1.20.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/modal",
+      "versions": [
+        "0.2.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/mongodb",
+      "versions": [
+        "1.9.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/mssql",
+      "versions": [
+        "1.3.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/mysql",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/nestjs",
+      "versions": [
+        "0.1.15"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/node-audio",
+      "versions": [
+        "0.1.8"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/node-speaker",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/observability",
+      "versions": [
+        "1.14.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/openai",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/opencode",
+      "versions": [
+        "0.0.47"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/opensearch",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/otel-bridge",
+      "versions": [
+        "1.2.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/otel-exporter",
+      "versions": [
+        "1.2.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/perplexity",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/pg",
+      "versions": [
+        "1.13.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/pinecone",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/playground-ui",
+      "versions": [
+        "33.0.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/posthog",
+      "versions": [
+        "1.0.29"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/qdrant",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/rag",
+      "versions": [
+        "2.2.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/railway",
+      "versions": [
+        "0.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/react",
+      "versions": [
+        "1.0.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/redis",
+      "versions": [
+        "1.1.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/redis-streams",
+      "versions": [
+        "0.0.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/s3",
+      "versions": [
+        "0.5.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/s3vectors",
+      "versions": [
+        "1.0.7"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/schema-compat",
+      "versions": [
+        "1.2.12"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/sentry",
+      "versions": [
+        "1.1.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/server",
+      "versions": [
+        "2.1.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/slack",
+      "versions": [
+        "1.3.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/spanner",
+      "versions": [
+        "1.1.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-azure",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-elevenlabs",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-google",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-ibm",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-murf",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-openai",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-replicate",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/speech-speechify",
+      "versions": [
+        "0.2.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/stagehand",
+      "versions": [
+        "0.2.5"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/tavily",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/temporal",
+      "versions": [
+        "0.1.14"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/turbopuffer",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/twilio",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/upstash",
+      "versions": [
+        "1.1.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/vectorize",
+      "versions": [
+        "1.0.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/vercel",
+      "versions": [
+        "1.0.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-aws-nova-sonic",
+      "versions": [
+        "0.1.4"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-azure",
+      "versions": [
+        "0.11.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-cloudflare",
+      "versions": [
+        "0.12.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-deepgram",
+      "versions": [
+        "0.12.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-elevenlabs",
+      "versions": [
+        "0.12.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-gladia",
+      "versions": [
+        "0.12.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-google",
+      "versions": [
+        "0.12.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-google-gemini-live",
+      "versions": [
+        "0.12.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-inworld",
+      "versions": [
+        "0.3.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-modelslab",
+      "versions": [
+        "0.1.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-murf",
+      "versions": [
+        "0.12.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-openai",
+      "versions": [
+        "0.12.3"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-openai-realtime",
+      "versions": [
+        "0.12.6"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-playai",
+      "versions": [
+        "0.12.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-sarvam",
+      "versions": [
+        "1.0.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-speechify",
+      "versions": [
+        "0.12.2"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@mastra/voice-xai-realtime",
+      "versions": [
+        "0.1.2"
       ],
       "campaign": "datadog-guarddog"
     },
@@ -7630,6 +8621,26 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "@ncurran/dc-selftest-33afb7",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@ncurran/dc-selftest-ba0ad4",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@ncurran/sandbox-recon-7c4e1a",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@ncurran/sandbox-recon-sys-6a3f",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@ncurran/sandbox-recon-uac-4e7c",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "@neednova/cash",
       "campaign": "datadog-guarddog"
     },
@@ -7704,6 +8715,14 @@
     },
     {
       "name": "@nnpmtest2/revshel",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@node-mf/tools",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@node-mf/utils",
       "campaign": "datadog-guarddog"
     },
     {
@@ -8631,6 +9650,10 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "@pixelzx/genesis",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "@pixui-dev/pxw",
       "campaign": "datadog-guarddog"
     },
@@ -9210,6 +10233,10 @@
     },
     {
       "name": "@ra-web-tech-ui-toolkit/common-utils",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@rafaelsene01/agent-flow",
       "campaign": "datadog-guarddog"
     },
     {
@@ -12795,6 +13822,10 @@
     },
     {
       "name": "@vampirchik147/libxmljs2",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "@vantuz/sdk-core",
       "campaign": "datadog-guarddog"
     },
     {
@@ -27308,6 +28339,10 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "bign.tsm",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "bignum-ts-v2",
       "campaign": "datadog-guarddog"
     },
@@ -28028,6 +29063,10 @@
     },
     {
       "name": "bode-which",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "bodega-sdk",
       "campaign": "datadog-guarddog"
     },
     {
@@ -28814,6 +29853,10 @@
     },
     {
       "name": "browserify_process",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "browserslist-db-sync",
       "campaign": "datadog-guarddog"
     },
     {
@@ -32150,6 +33193,10 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "chai-as-forgeted",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "chai-as-hashed",
       "campaign": "datadog-guarddog"
     },
@@ -32523,6 +33570,10 @@
     },
     {
       "name": "chai-smart-assert",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "chai-solidity-testkit",
       "campaign": "datadog-guarddog"
     },
     {
@@ -32961,6 +34012,10 @@
     },
     {
       "name": "check-release-dependencies",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "check-ulid",
       "campaign": "datadog-guarddog"
     },
     {
@@ -37688,6 +38743,10 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "color-utils-dee0",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "colorful_aardvark_z3n",
       "campaign": "datadog-guarddog"
     },
@@ -41144,6 +42203,13 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "create-mastra",
+      "versions": [
+        "1.13.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "create-mcp-use-app",
       "versions": [
         "0.5.3",
@@ -41599,6 +42665,10 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "crypto-credential-scanner",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "crypto-encrypt-ts",
       "campaign": "datadog-guarddog"
     },
@@ -41656,6 +42726,10 @@
     },
     {
       "name": "cryptocom-private-api",
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "cryptodao-config",
       "campaign": "datadog-guarddog"
     },
     {
@@ -42606,6 +43680,10 @@
       "campaign": "datadog-guarddog"
     },
     {
+      "name": "data-utils-d703",
+      "campaign": "datadog-guarddog"
+    },
+    {
       "name": "data-version-service",
       "campaign": "datadog-guarddog"
     },
@@ -42638,98 +43716,6 @@
       "campaign": "datadog-guarddog"
     },
     {
-      "name": "dataflow-unified",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "datamart",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "datamations",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "datanerd",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dataset-view",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "datatables-editor",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dataworkspace",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "date-fns.js",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "datlowe-font",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "daumu",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "daun124wdsa8",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "davaris-notthedevs",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dave-common",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dawid-insecure-npm",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dayjs-plugin-duration",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "daytona-test-filereader",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "daytona-test-npm",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "daytonjs",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dazaar-cli",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dazaar-payment",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dazz-redirects",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "db-cleaner",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "db-connections-templates",
-      "campaign": "datadog-guarddog"
-    },
-    {
       "name": "db-evo",
       "versions": [
         "1.1.4",
@@ -42738,575 +43724,11 @@
       "campaign": "datadog-guarddog"
     },
     {
-      "name": "db-prod-interno",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dbedhs-devapp",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dbqlpn-devapptea",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dbvahy-devapptea",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dbx-bazel-utils",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dbx-js-tools",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dbximgs",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dc-comments-beta-dropin",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dc-extras",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dc-genai-dropin",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dc-poc-test",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dc-spectrum-v3-core",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dc-web-app",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dcf-commons",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dctnev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dczddk-devapptea",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddataflow",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddddddd1d",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddok-escapes",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddos-attack-ecma",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddos-c2",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddos-hunter",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddos-l7",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddos-turbo-ecma",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddos-turbo-power",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "ddp-common",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dds-js",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dds-js-devkit",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dds-js-idl",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dds-js-idl-types",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "de-sxm-reactlib",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dead_pinniped_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dead_vole_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dead_zebra_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dead-moccasin-shark",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_angelfish_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_blackbird_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_camel_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_gecko_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_minnow_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_peacock-excellentdev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_smelt_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf_wren_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deaf-brown-dragonfly",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_clownfish-smiletea",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_flamingo-smiletea",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_goose_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_herring_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_landfowl_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_pike_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_scorpion-toolteadev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_shrew_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening_vicuna_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening-lime-spoonbill",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deafening-rose-spoonbill",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dealer-web",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deals1flash",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_armadillo_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_dormouse-notthedev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_elephant-appteadev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_fish_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_gecko_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_kingfisher_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_sailfish_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_shrimp_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear_vulture_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear-cyan-skunk",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear-lime-ant",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "dear-purple-bobcat",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deathball",
-      "campaign": "datadog-guarddog"
-    },
-    {
       "name": "debug",
       "versions": [
         "4.4.2"
       ],
       "campaign": "chalk-debug-cryptostealer-2025-09"
-    },
-    {
-      "name": "debug-common",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "debug-fmt",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "debug-glitz",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "debug-mj",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "debug-mj-v3",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "debug11",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "debugger-local",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "debugr1",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_buzzard_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_chinchilla_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_cougar_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_reptile_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_takin_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_tiglon_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_woodpecker_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent_xerinae_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent-chocolate-finch",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decent-lime-cockroach",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decentraland-credits-squid",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_chicken_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_flamingo_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_fowl_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_goldfish_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_hamster_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_meadowlark-appteadev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_orangutan-appteadev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_panther_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_pheasant_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_silverfish-smiletea",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_unicorn_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decisive_woodpecker_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "declaration-block-no-ignored-properties",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decode-sdk",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "decoupled-local-node-rig",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deep_coyote-silentdev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deep_dormouse_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deep_finch_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deep_goldfish_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deep_parakeet_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deep_puma_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deep_woodpecker_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deepcoin-dev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deepl-sync",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deere-ui-commonjs-shim",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deexileth",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deezcord.js",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "default-agent-provider",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "default-shared-store",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated_aardvark_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated_dormouse_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated_possum_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated_silkworm_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated_tiglon-notthedev",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated_wolverine_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated-apricot-termite",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defeated-plum-firefly",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defectdojo",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive_armadillo_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive_cardinal_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive_gazelle_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive_magpie_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive_meadowlark_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive_otter_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive_rabbit_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive-chocolate-whale",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defensive-teal-wildebeest",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "deferred-example",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defi-handbook",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defi-wallet",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defiant_felidae_z3n",
-      "campaign": "datadog-guarddog"
-    },
-    {
-      "name": "defiant_gorilla-strongdev",
-      "campaign": "datadog-guarddog"
     },
     {
       "name": "designstudiouiux",
@@ -43384,6 +43806,7 @@
     {
       "name": "echarts-for-react",
       "versions": [
+        "3.0.7",
         "3.1.7",
         "3.2.7"
       ],
@@ -44211,6 +44634,13 @@
       "name": "manual-billing-system-miniapp-api",
       "versions": [
         "1.3.1"
+      ],
+      "campaign": "datadog-guarddog"
+    },
+    {
+      "name": "mastra",
+      "versions": [
+        "1.13.1"
       ],
       "campaign": "datadog-guarddog"
     },
@@ -45188,6 +45618,7 @@
     {
       "name": "size-sensor",
       "versions": [
+        "1.0.4",
         "1.1.4",
         "1.2.4"
       ],
