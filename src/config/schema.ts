@@ -1,4 +1,5 @@
 import { ConfigError } from '../util/errors.js';
+import { trimTrailingSlashes } from '../util/text.js';
 import { isSeverity, type Severity } from '../engine/severity.js';
 import type { DegradedPolicy, GuardMode } from '../engine/verdict.js';
 import type { IgnoreRule } from '../engine/suppression.js';
@@ -206,7 +207,7 @@ export function parseConfig(raw: unknown, source: string): GuardConfig {
     } catch {
       fail(source, 'registry must be a valid URL');
     }
-    config.registry = registry.replace(/\/+$/, '');
+    config.registry = trimTrailingSlashes(registry);
   }
   if (obj.rules !== undefined) {
     const rules = asObject(obj.rules, source, 'rules');

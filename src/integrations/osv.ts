@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from '../util/text.js';
+
 /** One advisory affecting a queried package version. */
 export interface AdvisoryMatch {
   /** OSV identifier (e.g. a GHSA or CVE id). */
@@ -72,7 +74,7 @@ export class HttpOsvClient implements OsvClient {
   private readonly vulnMemo = new Map<string, VulnerabilityRecord | undefined>();
 
   constructor(options: HttpOsvClientOptions = {}) {
-    this.endpoint = (options.endpoint ?? DEFAULT_ENDPOINT).replace(/\/+$/, '');
+    this.endpoint = trimTrailingSlashes(options.endpoint ?? DEFAULT_ENDPOINT);
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;

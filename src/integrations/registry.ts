@@ -1,4 +1,5 @@
 import type { Cache } from './cache.js';
+import { trimTrailingSlashes } from '../util/text.js';
 
 /** Provenance-relevant fields the `provenance` rule reads off the packument. */
 export interface DistInfo {
@@ -162,7 +163,7 @@ export class HttpRegistryClient implements RegistryClient {
   private readonly cacheTtlMs: number;
 
   constructor(options: HttpRegistryClientOptions) {
-    this.registry = options.registry.replace(/\/+$/, '');
+    this.registry = trimTrailingSlashes(options.registry);
     this.cache = options.cache;
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;

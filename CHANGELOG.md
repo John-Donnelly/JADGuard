@@ -18,6 +18,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- **Dependency advisories cleared** — bumped transitive dependencies past their
+  patched versions: `js-yaml` 3.14.2 → 3.15.0 (GHSA-h67p-54hq-rp68, merge-key
+  DoS; runtime via `@yarnpkg/parsers`), `vite` 8.0.14 → 8.1.5
+  (GHSA-fx2h-pf6j-xcff `server.fs.deny` bypass, GHSA-v6wh-96g9-6wx3 NTLMv2
+  hash disclosure; dev via `vitest`), and `esbuild` 0.27.7 → 0.28.1
+  (GHSA-g7r4-m6w7-qqqr dev-server file read; dev via `tsup`/`vite`, pinned with
+  an npm override because tsup declares `^0.27.0`).
+- **Polynomial-ReDoS regexes removed** — the trailing-slash strip
+  `replace(/\/+$/, '')` on registry/OSV endpoint URLs and the `registry` config
+  value backtracked polynomially on hostile input (CodeQL js/polynomial-redos).
+  Replaced with a linear `trimTrailingSlashes` helper in `util/text`.
+
 ### Miasma worm response (June 2026)
 
 - **`binding-gyp` rule** (opt-in) — detects the Phantom Gyp attack vector:
