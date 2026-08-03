@@ -6,7 +6,7 @@ first in mind.
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By
+This project follows the [Contributor Covenant](https://github.com/John-Donnelly/.github/blob/main/CODE_OF_CONDUCT.md). By
 participating, you agree to uphold it.
 
 ## Development setup
@@ -14,8 +14,8 @@ participating, you agree to uphold it.
 Requirements: **Node.js >= 20** and **npm**.
 
 ```sh
-git clone https://github.com/John-Donnelly/jadapps-guard.git
-cd jadapps-guard
+git clone https://github.com/John-Donnelly/JADGuard.git
+cd JADGuard
 npm ci          # honours .npmrc (ignore-scripts=true)
 npm run check   # typecheck + lint + test
 ```

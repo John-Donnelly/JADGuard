@@ -71,7 +71,7 @@ export class SarifReporter implements Reporter {
           tool: {
             driver: {
               name: 'JAD Apps Guard',
-              informationUri: 'https://github.com/John-Donnelly/jadapps-guard',
+              informationUri: 'https://github.com/John-Donnelly/JADGuard',
               version: report.guardVersion,
               rules,
             },
