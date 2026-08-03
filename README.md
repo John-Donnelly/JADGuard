@@ -6,6 +6,10 @@
 [![node](https://img.shields.io/node/v/@jadapp/guard?logo=node.js)](https://www.npmjs.com/package/@jadapp/guard)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+<p align="center">
+<img src="docs/media/jadguard-audit.png" alt="Guard auditing its own dependency tree in a terminal, listing install-script findings above a summary line reading WARN — 32 medium, 2 low (exit 0) and a threat-feed footer" width="900">
+</p>
+
 A supply-chain **deployment gate** for JavaScript/TypeScript projects. Guard
 inspects the resolved dependency set in your lockfile and exits non-zero when it
 finds a malicious or risky indicator — so a poisoned dependency is blocked
@@ -101,6 +105,8 @@ The command only prints — it never writes or clobbers files.
 | `0`  | Passing verdict                     |
 | `1`  | Failing verdict, or a runtime error |
 | `2`  | Invalid CLI usage                   |
+
+![An audit run against a project whose lockfile resolves chalk@5.6.1: Guard reports it as known-malicious and as carrying an advisory, prints FAIL — 1 critical, 1 high (exit 1), and a follow-up echo of the shell's last exit code prints 1](docs/media/jadguard-blocked.gif)
 
 ## The dependency gate
 
