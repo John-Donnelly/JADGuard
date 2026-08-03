@@ -1,5 +1,11 @@
 # JAD Apps Guard
 
+[![CI](https://github.com/John-Donnelly/JADGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/John-Donnelly/JADGuard/actions/workflows/ci.yml)
+[![Security audit](https://github.com/John-Donnelly/JADGuard/actions/workflows/security-audit.yml/badge.svg)](https://github.com/John-Donnelly/JADGuard/actions/workflows/security-audit.yml)
+[![npm](https://img.shields.io/npm/v/@jadapp/guard?logo=npm&color=cb3837)](https://www.npmjs.com/package/@jadapp/guard)
+[![node](https://img.shields.io/node/v/@jadapp/guard?logo=node.js)](https://www.npmjs.com/package/@jadapp/guard)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A supply-chain **deployment gate** for JavaScript/TypeScript projects. Guard
 inspects the resolved dependency set in your lockfile and exits non-zero when it
 finds a malicious or risky indicator — so a poisoned dependency is blocked
