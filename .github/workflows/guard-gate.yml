@@ -1,7 +1,10 @@
 name: JADGuard supply-chain gate
 
-# This is the reference workflow for projects that want to use JADGuard as a
-# CI dependency gate. Copy it into your own repo's .github/workflows/.
+# Guard's own self-gate: Guard audits Guard's dependency tree on every PR and
+# every push to main, using the build from this working tree.
+#
+# Consumers should NOT copy this file — it invokes the local build directly.
+# Copy `templates/github-actions.yml` instead; it resolves Guard from npm.
 #
 # Two modes:
 #   scan  (pull_request) — checks only the dependencies changed by this PR.
@@ -15,7 +18,7 @@ name: JADGuard supply-chain gate
 #                          flagged immediately.
 #
 # To enable opt-in rules (binding-gyp, native-binary, typosquat, …) add --all
-# to the `npx @jadapp/guard` invocations below.
+# to the `node dist/cli.js` invocations below.
 
 on:
   pull_request:
@@ -56,12 +59,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # `npx` cannot resolve Guard inside Guard's own repo: the package name
+      # matches the project root, so npm never links node_modules/.bin/jadguard
+      # and npx falls through to a binary that does not exist. Build first and
+      # invoke the entry point directly.
+      - name: Build
+        run: npm run build
+
       - name: Scan changed dependencies
-        run: npx @jadapp/guard scan
+        run: node dist/cli.js scan
 
       - name: Generate SARIF
         if: always()
-        run: npx @jadapp/guard scan --format sarif --output guard.sarif || true
+        run: node dist/cli.js scan --format sarif --output guard.sarif || true
 
       - name: Upload findings to code scanning
         # Fork PRs lack code-scanning write permission; skip the upload there.
@@ -91,12 +101,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # `npx` cannot resolve Guard inside Guard's own repo: the package name
+      # matches the project root, so npm never links node_modules/.bin/jadguard
+      # and npx falls through to a binary that does not exist. Build first and
+      # invoke the entry point directly.
+      - name: Build
+        run: npm run build
+
       - name: Audit all dependencies
-        run: npx @jadapp/guard audit
+        run: node dist/cli.js audit
 
       - name: Generate SARIF
         if: always()
-        run: npx @jadapp/guard audit --format sarif --output guard.sarif || true
+        run: node dist/cli.js audit --format sarif --output guard.sarif || true
 
       - name: Upload findings to code scanning
         if: always()
