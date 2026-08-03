@@ -41,7 +41,22 @@ jobs:
       # `publishConfig` in package.json sets `provenance: true` and
       # `access: public`, so a plain `npm publish` emits a provenance
       # attestation given the `id-token: write` permission above.
+      # Re-pushing an existing tag re-triggers this workflow; npm answers a
+      # publish of an already-released version with a 403. Treat that as a
+      # no-op rather than a red build.
+      - name: Check whether this version is already published
+        id: published
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "@jadapp/guard@${version}" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@jadapp/guard@${version} is already on npm - skipping publish."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish
+        if: steps.published.outputs.skip == 'false'
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
