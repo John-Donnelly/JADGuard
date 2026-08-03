@@ -342,15 +342,26 @@ Node.js project at all.
 ## Continuous integration
 
 A ready-to-copy GitHub Actions workflow lives at
-[`.github/workflows/guard-gate.yml`](.github/workflows/guard-gate.yml). It
-runs `jadguard scan` on every pull request (fast, changed-deps-only — closes
-the timing gap so a Miasma-planted hook or Phantom Gyp payload is caught before
-the branch merges) and `jadguard audit` on every push to main, with SARIF
-upload to the GitHub Security tab in both cases.
+[`templates/github-actions.yml`](templates/github-actions.yml). It runs
+`jadguard scan` on every pull request (fast, changed-deps-only — closes the
+timing gap so a Miasma-planted hook or Phantom Gyp payload is caught before the
+branch merges) and `jadguard audit` on every push to main, with SARIF upload to
+the GitHub Security tab in both cases.
 
-Copy it into your own repo's `.github/workflows/` and replace the
-`npx @jadapp/guard` invocations with `node path/to/dist/cli.js` until the
-package is published.
+Copy it to `.github/workflows/jadguard.yml` in your project. It resolves Guard
+from npm, so no further edits are needed:
+
+```yaml
+- run: npx --yes @jadapp/guard@latest audit --format sarif --output jadguard.sarif
+```
+
+Templates for [GitLab CI](templates/gitlab-ci.yml) and a
+[pre-commit hook](templates/pre-commit) ship alongside it.
+
+> `.github/workflows/guard-gate.yml` in this repository is **not** the template
+> to copy. It is Guard's own self-gate and invokes the local build directly,
+> because `npx` cannot resolve `@jadapp/guard` inside Guard's own repo — the
+> package name matches the project root, so npm never links the bin.
 
 ## Architecture
 
