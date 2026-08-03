@@ -60,7 +60,7 @@
     "integration": "node test/integration/run.mjs"
   },
   "dependencies": {
-    "@yarnpkg/parsers": "3.0.3",
+    "@yarnpkg/parsers": "3.1.0",
     "yaml": "2.9.0"
   },
   "overrides": {
