@@ -48,6 +48,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The unit suite mocks lockfile input; this drives the built CLI over the
+      # fixture projects instead, so the npm/yarn/pnpm/bun parsers are actually
+      # executed. Without it a lockfile-parser dependency can be bumped and
+      # merged on a fully green build.
+      - name: Integration scenarios
+        run: npm run integration
+
   dogfood:
     name: dogfood (Guard audits its own dependencies)
     runs-on: ubuntu-latest
