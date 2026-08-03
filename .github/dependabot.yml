@@ -1,0 +1,30 @@
+# Dependabot must not touch test/integration/scenarios/.
+#
+# Those directories are hand-built fixtures whose manifests are deliberately
+# bad: 07-unpinned-ranges pins nothing (`^4.17.21`, `~5.3.0`, `latest`),
+# 11-known-malware pins chalk 5.6.1 because that release was compromised, and
+# 10-self-integrity-tampered carries a corrupted integrity hash on purpose.
+# Guard is asserted to flag exactly those inputs, so "upgrading" them deletes
+# the thing under test. PR #25 proposed precisely that and was closed.
+#
+# Scoping version updates to the real manifests keeps Dependabot useful without
+# letting it edit the fixtures.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore(actions)
