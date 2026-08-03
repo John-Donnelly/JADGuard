@@ -10,6 +10,8 @@
 <img src="docs/media/jadguard-audit.png" alt="Guard auditing its own dependency tree in a terminal, listing install-script findings above a summary line reading WARN — 32 medium, 2 low (exit 0) and a threat-feed footer" width="900">
 </p>
 
+**Status:** pre-1.0, actively developed · **Latest:** v0.1.1 on npm · **Licence:** MIT
+
 A supply-chain **deployment gate** for JavaScript/TypeScript projects. Guard
 inspects the resolved dependency set in your lockfile and exits non-zero when it
 finds a malicious or risky indicator — so a poisoned dependency is blocked
