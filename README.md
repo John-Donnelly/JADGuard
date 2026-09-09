@@ -27,15 +27,22 @@ lockfiles, with output for humans, JSON, and SARIF (GitHub code scanning).
 
 ## Install
 
-JADGuard is not yet published to a package registry. Install directly from the
-repository:
+Install the published package:
 
 ```sh
-git clone https://github.com/John-Donnelly/JADGuard.git
-cd JADGuard
-npm install
-npm run build
-npm link          # puts `jadguard` on your PATH globally
+npm install --save-dev @jadapp/guard@0.1.1
+```
+
+For a global CLI installation:
+
+```sh
+npm install --global @jadapp/guard@0.1.1
+```
+
+Or run an exact version without adding it to the project:
+
+```sh
+npx --yes @jadapp/guard@0.1.1 audit
 ```
 
 Requires Node.js >= 20.
@@ -389,11 +396,11 @@ they never exit the process — the verdict engine owns exit codes. See
 
 ## Programmatic use
 
-After building locally (see [Install](#install)), import from the `dist/` output
-directly:
+After installing the package (see [Install](#install)), import from its public
+package export:
 
 ```ts
-import { runScan } from './dist/index.js'; // adjust path to your JADGuard checkout
+import { runScan } from '@jadapp/guard';
 
 const { verdict } = await runScan({ dir: process.cwd(), scanType: 'audit' });
 if (verdict.status === 'fail') process.exitCode = 1;
@@ -403,8 +410,8 @@ if (verdict.status === 'fail') process.exitCode = 1;
 
 Guard is a security tool and is held to the standard it asks of others: zero
 install scripts, pinned and lockfiled dependencies, and it dogfoods its own gate
-in CI. npm provenance will be enabled when the package is published to a
-registry. Report vulnerabilities privately — see
+in CI. Releases are published with npm provenance (OIDC build attestation).
+Report vulnerabilities privately — see
 [`SECURITY.md`](SECURITY.md).
 
 ## License
