@@ -68,13 +68,13 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "26.1.2",
-    "@vitest/coverage-v8": "4.1.10",
-    "eslint": "10.8.0",
-    "tsup": "8.5.1",
+    "@types/node": "26.6.5",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.13.0",
+    "tsup": "9.0.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.66.0",
-    "vitest": "4.1.10"
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
   },
   "publishConfig": {
     "access": "public",
